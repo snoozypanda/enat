@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Ember & Stone"
+description = "A premium mobile-first restaurant website for Ember & Stone, a modern London dining room. Explore the menu, discover the atmosphere, read guest reviews, and make a frontend-only table enquiry through an editorial, cinematic experience."
+version = "1.0.0"
+id = "artifacts/ember-and-stone"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21897
+
+[services.development]
+run = "pnpm --filter @workspace/ember-and-stone run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ember-and-stone", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ember-and-stone/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21897"
+BASE_PATH = "/"
