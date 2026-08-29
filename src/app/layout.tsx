@@ -4,18 +4,23 @@ import { Providers } from '@/components/providers';
 import '../index.css';
 
 export const metadata: Metadata = {
-  title: 'Enat — Ethiopian & Eritrean Restaurant',
-  description: 'Enat serves vibrant Ethiopian and Eritrean vegan, vegetarian and traditional food, with coffee poured in ceremony.',
+  title: 'Enate — Ethiopian & Eritrean Restaurant',
+  description: 'Enate serves vibrant Ethiopian and Eritrean vegan, vegetarian and traditional food, with coffee poured in ceremony.',
+  icons: {
+    icon: '/menu-assets/enat-logo.png',
+    shortcut: '/menu-assets/enat-logo.png',
+    apple: '/menu-assets/enat-logo.png',
+  },
   robots: { index: true, follow: true },
   openGraph: {
-    title: 'Enat — Ethiopian & Eritrean Restaurant',
+    title: 'Enate — Ethiopian & Eritrean Restaurant',
     description: 'Vibrant Ethiopian and Eritrean food, generous plates, and coffee poured with ceremony.',
     type: 'website',
     images: ['https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=1800'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Enat — Ethiopian & Eritrean Restaurant',
+    title: 'Enate — Ethiopian & Eritrean Restaurant',
     description: 'Vibrant Ethiopian and Eritrean food, generous plates, and coffee poured with ceremony.',
   },
 };

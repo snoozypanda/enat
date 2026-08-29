@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from 'motion/react';
-import { ArrowDown, ArrowLeft, ArrowRight, CalendarDays, Clock3, Coffee, Flame, Instagram, MapPin, Menu, MessageCircle, Plus, Quote, Star, Utensils, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, CalendarDays, Clock3, Coffee, Flame, MapPin, Menu, MessageCircle, Music2, Plus, Quote, Star, Utensils, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { menuCategories, menuDishes } from '@/lib/menu';
 const images = {
@@ -58,10 +58,10 @@ const legacyDishes: Dish[] = [
 const dishes: Dish[] = menuDishes;
 const categories = menuCategories;
 const gallery = [
-  { src: images.room, alt: 'The Enat dining room with a yellow arch and communal tables', title: 'A room with a pulse' },
-  { src: images.injera, alt: 'Colorful Ethiopian dishes on injera', title: 'Everything in the middle' },
-  { src: images.coffee, alt: 'Jebena coffee ceremony on a charcoal table', title: 'Buna, slowly' },
-  { src: images.spice, alt: 'Berbere spices and roasted peppers', title: 'The colour of flavour' },
+  { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmMdOpqa62J3czhraxPrsSDNCp2rsW_CtGKjMY3QHZPkViHGsDTqH0AFc5csDFU70lC9yPADHguTPqTInxoa75tspdv7XHH3Qrpssnv5Ga_sTgfQ9FcQxLvxRovZyw8Mc848ib-4MVuuNM8=w1200-h1200-n-k-no', alt: 'Public photo of Enate Restaurant in London', title: 'Enate, in the moment' },
+  { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmPojEEkUSIvqQdiPfngtMwGVlPE4RkARkfH96_-oxcz4z5AwCbZQV6xBmSm277MPXGDaVjzgGZ70LEILaAxBxWbARm6_tyqCNfY2VI0UVEY9zWtvsKjDFr5Y0SNKS232Qgb2ieg3zg5KYht=w1200-h1200-n-k-no', alt: 'Public food photo from Enate Restaurant', title: 'Food made to share' },
+  { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmM1lmihhNBoszIugRDYyKDGq8rhW0yQpQsLzoHiLPV3drC0OsPZV66sR9vvLGhbHwUSgect1YggicvJLtT2HkpLAogfICQnMkAIj_lbwwAkj1ARHWLRExCLIuM_IJQ8_YGupKXIkGuya5ep=w1200-h1200-n-k-no', alt: 'Public photo from Enate Restaurant in London', title: 'Flavour at the table' },
+  { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmO60qDShAg0z9elOTF0CH3gyibh9bDw_3hqZQQUygwJgro_-YdK5fo3kdgTaSbjORTJNfzLj6ng71Xvl5ixdCDYL1B2E92h1iGCNeJ5kA10RiyHLgPsUlqBRY-b1T4Q6Eu2NHzYWlWVgyOo=w1200-h1800-p-k-no', alt: 'Customer food photo from David Andrew’s Google review of Enate Restaurant', title: 'David Andrew’s review' },
 ];
 
 /* ─── Animation helpers ─── */
@@ -142,7 +142,7 @@ function Header({ onMenu }: { onMenu: () => void }) {
             transition={{ type: 'spring', stiffness: 300 }}
             className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-[#f3cf22] bg-[#f4f2e9]"
           >
-            <img src="/menu-assets/enat-logo.png" alt="Enat Ethiopian & Eritrean Restaurant" className="h-full w-full object-cover" />
+            <img src="/menu-assets/enat-logo.png" alt="Enate Ethiopian & Eritrean Restaurant" className="h-full w-full object-cover" />
           </motion.span>
         </a>
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
@@ -200,7 +200,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           className="fixed inset-0 z-50 flex min-h-[100dvh] flex-col bg-[#242522] px-6 py-6 text-[#f4f2e9] mobile-safe"
         >
           <div className="flex items-center justify-between">
-            <span className="eyebrow text-[#f3cf22]">Enat / እናት / Mother</span>
+            <span className="eyebrow text-[#f3cf22]">Enate / እናቴ / My mother</span>
             <motion.button
               type="button"
               onClick={onClose}
@@ -257,7 +257,7 @@ function Hero({ onReserve, onMenu }: { onReserve: () => void; onMenu: () => void
     <section ref={sectionRef} id="top" className="relative flex min-h-[100dvh] items-end overflow-hidden bg-[#242522] text-[#f4f2e9] md:min-h-[95svh]">
       <motion.img
         src={images.hero}
-        alt="A generous Ethiopian and Eritrean platter at Enat"
+        alt="A generous Ethiopian and Eritrean platter at Enate"
         fetchPriority="high"
         style={{ scale: imgScale, y: imgY }}
         className="absolute inset-0 h-full w-full object-cover object-center opacity-75"
@@ -355,7 +355,7 @@ function IntroStory() {
               <span className="stamp inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#84373d]">Since 2018 <Flame size={14} /></span>
             </motion.div>
             <motion.p variants={staggerItem} className="mt-12 max-w-[300px] font-mono text-sm leading-7 text-[#242522]/70 md:text-base">
-              Enat means mother. It is a word for the person who makes sure there is always enough.
+              Enate means mother in Amharic. It is a word for the person who makes sure there is always enough.
             </motion.p>
           </StaggerChildren>
           <div>
@@ -610,7 +610,7 @@ function GallerySection({ onOpen }: { onOpen: (index: number) => void }) {
             </motion.h2>
           </StaggerChildren>
           <Reveal delay={0.3} direction="right">
-            <p className="max-w-xs text-sm leading-6 text-[#242522]/70">Yellow walls, good records, woven textures and tables that refuse to be quiet. This is not a candlelit dining room.</p>
+            <p className="max-w-xs text-sm leading-6 text-[#242522]/70">A welcoming table on Goldhawk Road, where Ethiopian and Eritrean cooking, music and generous plates make you feel at home.</p>
           </Reveal>
         </div>
         <StaggerChildren className="grid auto-rows-[170px] grid-cols-2 gap-3 md:auto-rows-[230px] md:grid-cols-4" stagger={0.1}>
@@ -665,7 +665,7 @@ function GalleryViewer({ index, onClose, onStep }: { index: number | null; onClo
             <img src={gallery[index].src} alt={gallery[index].alt} className="max-h-[76svh] w-auto object-contain" />
             <figcaption className="mt-4 flex items-center justify-between text-[#f4f2e9]">
               <span className="display text-2xl">{gallery[index].title}</span>
-              <span className="eyebrow text-[#f3cf22]">{String(index + 1).padStart(2, '0')} / 04</span>
+              <span className="eyebrow text-[#f3cf22]">{String(index + 1).padStart(2, '0')} / {String(gallery.length).padStart(2, '0')}</span>
             </figcaption>
           </motion.figure>
           <button type="button" onClick={(event) => { event.stopPropagation(); onStep(1); }} data-testid="button-gallery-next" aria-label="Next gallery image" className="absolute right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-[#f4f2e9]/25 text-[#f4f2e9]"><ArrowRight size={18} /></button>
@@ -680,7 +680,7 @@ function GalleryViewer({ index, onClose, onStep }: { index: number | null; onClo
 function Reviews() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px 0px' });
-  const quote = "A riot of colour and spice. We arrived for dinner and stayed for the coffee ceremony.";
+  const quote = "Felt like back home, when walking in the aroma, the music and the people.";
   const words = quote.split(' ');
 
   return (
@@ -719,14 +719,14 @@ function Reviews() {
         <Reveal delay={0.8}>
           <div className="mt-10 flex items-center gap-4 text-xs text-[#f4f2e9]/58">
             <span className="h-[3px] w-10 bg-[#f3cf22]" />
-            <span>Amara K. / London dining guide</span>
+            <span>Yonatan Tiruneh / Google review</span>
           </div>
         </Reveal>
         <Reveal delay={1}>
           <div className="mt-20 grid gap-4 border-t border-[#f4f2e9]/15 pt-5 text-xs text-[#f4f2e9]/55 sm:grid-cols-3">
-            <span>4.8 / 5 guest rating</span>
-            <span className="sm:text-center">Best shared table, 2024</span>
-            <span className="sm:text-right">Soho, W1D</span>
+            <span>5.0 / 5 Google rating</span>
+            <span className="sm:text-center">57 Google reviews</span>
+            <span className="sm:text-right">Goldhawk Road, W12</span>
           </div>
         </Reveal>
       </div>
@@ -875,7 +875,7 @@ function LocationFooter() {
             <motion.div variants={staggerItem}>
               <span className="eyebrow text-[#f3cf22]">Stay close</span>
               <div className="mt-3 flex items-center gap-5">
-                <motion.a href="https://www.instagram.com" target="_blank" rel="noreferrer" data-testid="link-instagram" aria-label="Instagram" whileHover={{ scale: 1.2, color: '#f3cf22' }} className="text-[#f4f2e9]/70 transition-colors"><Instagram size={19} /></motion.a>
+                <motion.a href="https://www.tiktok.com/@enate.restaurant" target="_blank" rel="noreferrer" data-testid="link-tiktok" aria-label="TikTok" whileHover={{ scale: 1.2, color: '#f3cf22' }} className="text-[#f4f2e9]/70 transition-colors"><Music2 size={19} /></motion.a>
                 <motion.a href="mailto:hello@enatrestaurant.co.uk" data-testid="link-email" whileHover={{ color: '#f3cf22' }} className="text-xs text-[#f4f2e9]/70 transition-colors">hello@enatrestaurant.co.uk</motion.a>
               </div>
             </motion.div>
@@ -883,7 +883,7 @@ function LocationFooter() {
         </div>
         <Reveal delay={0.3}>
           <div className="mt-24 flex flex-col gap-4 border-t border-[#f4f2e9]/15 pt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/40 sm:flex-row sm:justify-between">
-            <span>© 2025 Enat</span>
+            <span>© 2025 Enate</span>
             <span>Addis / Asmara / Soho</span>
             <a href="#top" data-testid="link-footer-top" className="hover:text-[#f3cf22]">Back to the beginning ↑</a>
           </div>
@@ -914,7 +914,7 @@ function FloatingActions() {
         >
           {/* Leave a Review */}
           <motion.a
-            href="https://www.google.com/maps/search/?api=1&query=Enat%20Restaurant%2C%2016%20Bateman%20Street%2C%20Soho%2C%20London"
+            href="https://www.google.com/maps?cid=7536817678853431196"
             target="_blank"
             rel="noreferrer"
             data-testid="fab-review"
@@ -967,7 +967,7 @@ function Home() {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [galleryIndex]);
-  useEffect(() => { document.title = 'Enat \u2014 Ethiopian & Eritrean Restaurant'; const description = document.querySelector('meta[name="description"]') ?? document.createElement('meta'); description.setAttribute('name', 'description'); description.setAttribute('content', 'Enat is an Ethiopian and Eritrean restaurant in Soho, London. Berbere, injera, buna and generous tables.'); document.head.appendChild(description); }, []);
+  useEffect(() => { document.title = 'Enate \u2014 Ethiopian & Eritrean Restaurant'; const description = document.querySelector('meta[name="description"]') ?? document.createElement('meta'); description.setAttribute('name', 'description'); description.setAttribute('content', 'Enate is an Ethiopian and Eritrean restaurant in London. Berbere, injera, buna and generous tables.'); document.head.appendChild(description); }, []);
   return (
     <main className="site-shell grain min-h-[100dvh]">
       <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
