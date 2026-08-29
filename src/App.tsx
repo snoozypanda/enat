@@ -354,7 +354,7 @@ function IntroStory() {
             <motion.div variants={staggerItem}>
               <span className="stamp inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#84373d]">Since 2018 <Flame size={14} /></span>
             </motion.div>
-            <motion.p variants={staggerItem} className="mt-12 max-w-[210px] font-mono text-xs leading-6 text-[#242522]/70">
+            <motion.p variants={staggerItem} className="mt-12 max-w-[300px] font-mono text-sm leading-7 text-[#242522]/70 md:text-base">
               Enat means mother. It is a word for the person who makes sure there is always enough.
             </motion.p>
           </StaggerChildren>
@@ -419,7 +419,11 @@ function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
           </Reveal>
         </div>
         <Reveal delay={0.2}>
-          <div className="mt-16 flex gap-2 overflow-x-auto border-b border-[#f4f2e9]/20 pb-px scrollbar-hide">
+          <div className="mt-12 md:mt-16">
+            <p className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/48 md:hidden">
+              Swipe sideways for more categories <ArrowRight size={13} aria-hidden="true" />
+            </p>
+            <div className="flex gap-2 overflow-x-auto border-b border-[#f4f2e9]/20 pb-px scrollbar-hide">
             {categories.map((category) => (
               <motion.button
                 type="button"
@@ -433,6 +437,7 @@ function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
                 {category}
               </motion.button>
             ))}
+            </div>
           </div>
         </Reveal>
         <div className="divide-y divide-[#f4f2e9]/15">
@@ -448,7 +453,7 @@ function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as const }}
                 whileHover={{ backgroundColor: 'rgba(244,242,233,0.04)' }}
-                className="group grid w-full gap-5 py-6 text-left md:grid-cols-[72px_1.15fr_1fr_auto] md:items-center"
+                className="group grid w-full gap-3 py-4 text-left md:grid-cols-[72px_1.15fr_1fr_auto] md:items-center md:gap-5 md:py-6"
               >
                 <span className="eyebrow text-[#f3cf22]">0{i + 1}</span>
                 <div className="flex items-center gap-4">
@@ -461,7 +466,7 @@ function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
                   </div>
                 </div>
                 <p className="hidden text-sm leading-6 text-[#f4f2e9]/55 md:block">{dish.description}</p>
-                <span className="flex items-center gap-3 pl-[92px] font-mono text-sm text-[#f3cf22] md:pl-0">
+                <span className="flex items-center gap-3 pl-[92px] font-mono text-sm font-semibold text-[#f3cf22] md:pl-0">
                   £{dish.price} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                 </span>
               </motion.button>
@@ -525,7 +530,7 @@ function DishModal({ dish, onClose }: { dish: Dish | null; onClose: () => void }
               <h2 className="display mt-4 text-5xl leading-[.85]">{dish.name}</h2>
               <p className="mt-6 text-sm leading-7 text-[#242522]/72">{dish.detail}</p>
               <div className="mt-8 flex items-center justify-between border-t border-[#242522]/20 pt-5">
-                <span className="font-mono text-sm text-[#84373d]">£{dish.price}</span>
+                <span className="font-mono text-sm font-semibold text-[#84373d]">£{dish.price}</span>
                 <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#242522]/55">Tap outside to close</span>
               </div>
             </div>
@@ -909,7 +914,7 @@ function FloatingActions() {
         >
           {/* Leave a Review */}
           <motion.a
-            href="https://g.page/r/PLACEHOLDER/review"
+            href="https://www.google.com/maps/search/?api=1&query=Enat%20Restaurant%2C%2016%20Bateman%20Street%2C%20Soho%2C%20London"
             target="_blank"
             rel="noreferrer"
             data-testid="fab-review"
@@ -926,7 +931,7 @@ function FloatingActions() {
 
           {/* WhatsApp */}
           <motion.a
-            href="https://wa.me/PLACEHOLDER_NUMBER"
+            href="https://wa.me/442079460812?text=Hello%20Enat%2C%20I%27d%20like%20to%20make%20an%20enquiry."
             target="_blank"
             rel="noreferrer"
             data-testid="fab-whatsapp"
@@ -977,6 +982,7 @@ function Home() {
       <LocationFooter />
       <DishModal dish={dish} onClose={() => setDish(null)} />
       <GalleryViewer index={galleryIndex} onClose={() => setGalleryIndex(null)} onStep={stepGallery} />
+      <FloatingActions />
     </main>
   );
 }
