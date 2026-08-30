@@ -85,4 +85,4 @@ export const menuDishes: MenuDish[] = [
   dish('bottle-of-wine', 'drinks', 'Bottle of Wine', 'Bottle of wine', '17.00', images.coffee, 'beer and wine'),
 ];
 
-export const menuCategories = ['the full menu', 'breakfast', 'starters', 'vegetarian', 'mains', 'specials', 'coffee ceremony', 'drinks'];
+export const menuCategories = ['starters', 'the full menu', 'breakfast', 'vegetarian', 'mains', 'specials', 'coffee ceremony', 'drinks'];
