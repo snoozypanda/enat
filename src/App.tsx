@@ -389,7 +389,7 @@ function IntroStory() {
 /* ─── Menu Section ─── */
 
 function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
-  const [active, setActive] = useState('the full menu');
+  const [active, setActive] = useState('starters');
   const visible = useMemo(() => active === 'the full menu' ? dishes : dishes.filter((dish) => dish.category === active), [active]);
   return (
     <section id="menu" className="dark-panel relative overflow-hidden px-5 py-20 md:px-10 md:py-32">
