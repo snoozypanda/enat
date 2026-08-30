@@ -142,7 +142,7 @@ function Header({ onMenu }: { onMenu: () => void }) {
             transition={{ type: 'spring', stiffness: 300 }}
             className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-[#f3cf22] bg-[#f4f2e9]"
           >
-            <img src="/menu-assets/enat-logo.png" alt="Enate Ethiopian & Eritrean Restaurant" className="h-full w-full object-cover" />
+            <img src="/menu-assets/enate-logo.jpg" alt="Enate Ethiopian & Eritrean Restaurant" className="h-full w-full object-cover" />
           </motion.span>
         </a>
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">

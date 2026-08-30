@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   title: 'Enate — Ethiopian & Eritrean Restaurant',
   description: 'Enate serves vibrant Ethiopian and Eritrean vegan, vegetarian and traditional food, with coffee poured in ceremony.',
   icons: {
-    icon: '/menu-assets/enat-logo.png',
-    shortcut: '/menu-assets/enat-logo.png',
-    apple: '/menu-assets/enat-logo.png',
+    icon: '/menu-assets/enate-logo.jpg',
+    shortcut: '/menu-assets/enate-logo.jpg',
+    apple: '/menu-assets/enate-logo.jpg',
   },
   robots: { index: true, follow: true },
   openGraph: {
