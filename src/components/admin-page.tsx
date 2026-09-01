@@ -252,7 +252,7 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#1a1b19] font-sans text-[#f4f2e9]">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-[#1a1b19] font-sans text-[#f4f2e9]">
       {/* Sidebar backdrop on mobile */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -308,7 +308,7 @@ function AdminDashboard() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-[280px]' : 'ml-0'}`}>
+      <main className={`min-w-0 flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-[280px]' : 'ml-0'}`}>
         {/* Top bar */}
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[#f4f2e9]/10 bg-[#1a1b19]/95 px-4 py-3 backdrop-blur-md sm:px-6 sm:py-4">
           <div className="flex items-center gap-4">
@@ -337,7 +337,7 @@ function AdminDashboard() {
         </div>
 
         {/* Views */}
-        <div className="p-3 sm:p-4 md:p-6">
+        <div className="min-w-0 p-3 sm:p-4 md:p-6">
           <AnimatePresence mode="wait">
             {view === 'dashboard' && (
               <motion.div key="dashboard" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
@@ -744,17 +744,17 @@ function ReservationsView() {
 
   return (
     <div>
-      <div className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-6">
+      <div className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-4 sm:p-6">
         <h2 className="text-xl font-bold">Reservation enquiries</h2>
-        <div className="mt-5 flex items-center justify-between gap-4">
-          <p className="text-sm text-[#f4f2e9]/55">New booking requests from the restaurant website.</p>
-          <button type="button" onClick={() => void loadReservations()} disabled={isLoading} className="shrink-0 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522] disabled:opacity-70">{isLoading ? 'Loading…' : 'Refresh'}</button>
+        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-lg text-sm text-[#f4f2e9]/55">New booking requests from the restaurant website.</p>
+          <button type="button" onClick={() => void loadReservations()} disabled={isLoading} className="w-full shrink-0 rounded-md bg-[#f3cf22] px-4 py-3 text-sm font-bold text-[#242522] disabled:opacity-70 sm:w-auto sm:py-2">{isLoading ? 'Loading…' : 'Refresh'}</button>
         </div>
         {error && <p role="alert" className="mt-3 text-sm text-[#f3cf22]">{error}</p>}
       </div>
 
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {periods.map((item) => <button key={item.value} type="button" onClick={() => setPeriod(item.value)} className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${period === item.value ? 'bg-[#f3cf22] text-[#242522]' : 'border border-[#f4f2e9]/15 text-[#f4f2e9]/55 hover:text-[#f4f2e9]'}`}>{item.label}</button>)}
+      <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        {periods.map((item) => <button key={item.value} type="button" onClick={() => setPeriod(item.value)} className={`w-full rounded-full px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors sm:w-auto ${period === item.value ? 'bg-[#f3cf22] text-[#242522]' : 'border border-[#f4f2e9]/15 text-[#f4f2e9]/55 hover:text-[#f4f2e9]'}`}>{item.label}</button>)}
       </div>
 
       {filteredReservations.length > 0 ? (
