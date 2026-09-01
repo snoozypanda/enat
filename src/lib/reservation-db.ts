@@ -14,7 +14,7 @@ type ReservationRow = {
 };
 
 function getDatabase() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!databaseUrl) throw new Error('Reservation storage is not configured.');
   return neon(databaseUrl);
 }
