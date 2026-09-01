@@ -33,6 +33,7 @@ async function ensureReservationsTable() {
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await sql`ALTER TABLE reservations ALTER COLUMN email SET DEFAULT ''`;
   await sql`ALTER TABLE reservations ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE reservations ALTER COLUMN phone SET DEFAULT ''`;
   return sql;

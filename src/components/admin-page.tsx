@@ -151,6 +151,8 @@ function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [availabilitySavingId, setAvailabilitySavingId] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState('');
 
   // Persist to localStorage
   useEffect(() => {
@@ -165,6 +167,17 @@ function AdminDashboard() {
     fetch('/api/categories')
       .then((response) => response.json() as Promise<{ categories?: string[] }>)
       .then((result) => { if (result.categories) setCategories(result.categories); })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/menu-availability')
+      .then((response) => response.json() as Promise<{ availability?: Record<string, boolean> }>)
+      .then((result) => {
+        const availability = result.availability;
+        if (!availability) return;
+        setMenuItems((current) => current.map((item) => item.id in availability ? { ...item, available: availability[item.id] } : item));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -187,8 +200,22 @@ function AdminDashboard() {
     setDeleteConfirm(null);
   };
 
-  const toggleAvailability = (id: string) => {
-    setMenuItems((prev) => prev.map((m) => m.id === id ? { ...m, available: !m.available } : m));
+  const toggleAvailability = async (id: string) => {
+    const item = menuItems.find((entry) => entry.id === id);
+    if (!item) return;
+    const available = !item.available;
+    setAvailabilityError('');
+    setAvailabilitySavingId(id);
+    try {
+      const response = await fetch('/api/menu-availability', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: id, available }) });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not update availability.');
+      setMenuItems((current) => current.map((entry) => entry.id === id ? { ...entry, available } : entry));
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not update availability.');
+    } finally {
+      setAvailabilitySavingId(null);
+    }
   };
 
   const addCategory = async (name: string) => {
@@ -325,6 +352,8 @@ function AdminDashboard() {
                   onEdit={(item) => { setEditItem(item); setShowForm(true); }}
                   onDelete={(id) => setDeleteConfirm(id)}
                   onToggle={toggleAvailability}
+                  savingAvailabilityId={availabilitySavingId}
+                  availabilityError={availabilityError}
                 />
               </motion.div>
             )}
@@ -486,12 +515,14 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
 
 /* ─── Menu Items View ─── */
 
-function MenuItemsView({ items, categories, onEdit, onDelete, onToggle }: {
+function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAvailabilityId, availabilityError }: {
   items: MenuItem[];
   categories: string[];
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
-  onToggle: (id: string) => void;
+  onToggle: (id: string) => void | Promise<void>;
+  savingAvailabilityId: string | null;
+  availabilityError: string;
 }) {
   const [filter, setFilter] = useState('all');
   const filtered = filter === 'all' ? items : items.filter((item) => item.category === filter);
@@ -499,6 +530,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle }: {
 
   return (
     <div>
+      {availabilityError && <p role="alert" className="mb-4 text-sm text-[#f3cf22]">{availabilityError}</p>}
       {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
         {allCategories.map((cat) => (
@@ -555,8 +587,8 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle }: {
                     <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">{item.tag}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <button type="button" onClick={() => onToggle(item.id)} className={`inline-flex min-w-[78px] justify-center whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold uppercase transition-colors ${item.available ? 'bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25' : 'bg-[#84373d]/15 text-[#84373d] hover:bg-[#84373d]/25'}`}>
-                      {item.available ? 'Available' : 'Hidden'}
+                    <button type="button" disabled={savingAvailabilityId === item.id} onClick={() => void onToggle(item.id)} className={`inline-flex min-w-[78px] justify-center whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold uppercase transition-colors disabled:opacity-60 ${item.available ? 'bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25' : 'bg-[#84373d]/15 text-[#84373d] hover:bg-[#84373d]/25'}`}>
+                      {savingAvailabilityId === item.id ? 'Saving…' : item.available ? 'Available' : 'Hidden'}
                     </button>
                   </td>
                   <td className="px-4 py-3">

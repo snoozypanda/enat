@@ -988,6 +988,7 @@ function Home() {
   const [dish, setDish] = useState<Dish | null>(null);
   const [dishes, setDishes] = useState<Dish[]>(menuDishes);
   const [categories, setCategories] = useState(menuCategories);
+  const [hiddenDishIds, setHiddenDishIds] = useState<Set<string>>(() => new Set());
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const goToReserve = () => document.getElementById('reserve')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   const stepGallery = (dir: number) => setGalleryIndex((current) => current === null ? null : (current + dir + gallery.length) % gallery.length);
@@ -1006,6 +1007,15 @@ function Home() {
     updateMenu();
     window.addEventListener('storage', updateMenu);
     return () => window.removeEventListener('storage', updateMenu);
+  }, []);
+  useEffect(() => {
+    fetch('/api/menu-availability')
+      .then((response) => response.json() as Promise<{ availability?: Record<string, boolean> }>)
+      .then((result) => {
+        if (!result.availability) return;
+        setHiddenDishIds(new Set(Object.entries(result.availability).filter(([, available]) => !available).map(([id]) => id)));
+      })
+      .catch(() => undefined);
   }, []);
   useEffect(() => {
     const updateCategories = () => {
@@ -1027,7 +1037,7 @@ function Home() {
       <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <IntroStory />
-      <MenuSection dishes={dishes} categories={categories} onDish={setDish} />
+      <MenuSection dishes={dishes.filter((dish) => !hiddenDishIds.has(dish.id))} categories={categories} onDish={setDish} />
       <SpecialSection />
       <GallerySection onOpen={setGalleryIndex} />
       <Reviews />
