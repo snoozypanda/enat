@@ -5,6 +5,9 @@ import { AnimatePresence, motion, useInView, useScroll, useTransform } from 'mot
 import { ArrowDown, ArrowLeft, ArrowRight, CalendarDays, Clock3, Coffee, Flame, MapPin, Menu, MessageCircle, Music2, Plus, Quote, Star, Utensils, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { menuCategories, menuDishes } from '@/lib/menu';
+import { readStoredMenu } from '@/lib/menu-storage';
+import { partySizes, type PartySize } from '@/lib/reservations';
+import { menuTabs, readStoredCategories } from '@/lib/category-storage';
 const images = {
   hero: '/menu-assets/enat-hero.jpg',
   kitfo: '/menu-assets/enat-kitfo.jpg',
@@ -55,8 +58,6 @@ const legacyDishes: Dish[] = [
   { id: 'glass-wine', category: 'drinks', name: "Glass of Wine", description: "Red, white, or rosé", price: '5', image: images.coffee, detail: "A glass of our house selection wine.", tag: 'relax' },
   { id: 'bottle-wine', category: 'drinks', name: "Bottle of Wine", description: "Red, white, or rosé", price: '17', image: images.coffee, detail: "A full bottle from our wine list.", tag: 'for the table' },
 ];
-const dishes: Dish[] = menuDishes;
-const categories = menuCategories;
 const gallery = [
   { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmMdOpqa62J3czhraxPrsSDNCp2rsW_CtGKjMY3QHZPkViHGsDTqH0AFc5csDFU70lC9yPADHguTPqTInxoa75tspdv7XHH3Qrpssnv5Ga_sTgfQ9FcQxLvxRovZyw8Mc848ib-4MVuuNM8=w1200-h1200-n-k-no', alt: 'Public photo of Enate Restaurant in London', title: 'Enate, in the moment' },
   { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmPojEEkUSIvqQdiPfngtMwGVlPE4RkARkfH96_-oxcz4z5AwCbZQV6xBmSm277MPXGDaVjzgGZ70LEILaAxBxWbARm6_tyqCNfY2VI0UVEY9zWtvsKjDFr5Y0SNKS232Qgb2ieg3zg5KYht=w1200-h1200-n-k-no', alt: 'Public food photo from Enate Restaurant', title: 'Food made to share' },
@@ -388,7 +389,7 @@ function IntroStory() {
 
 /* ─── Menu Section ─── */
 
-function MenuSection({ onDish }: { onDish: (dish: Dish) => void }) {
+function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categories: string[]; onDish: (dish: Dish) => void }) {
   const [active, setActive] = useState('starters');
   const visible = useMemo(() => active === 'the full menu' ? dishes : dishes.filter((dish) => dish.category === active), [active]);
   return (
@@ -778,9 +779,31 @@ function Events() {
 
 function Reservation() {
   const [submitted, setSubmitted] = useState(false);
-  const [guests, setGuests] = useState('2 guests');
-  const [form, setForm] = useState({ name: '', email: '', date: '', note: '' });
+  const [guests, setGuests] = useState<PartySize>('2 guests');
+  const [form, setForm] = useState({ name: '', phone: '', date: '', time: '19:00', note: '' });
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const submitReservation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, guests }),
+      });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'We could not send your enquiry.');
+      setSubmitted(true);
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : 'We could not send your enquiry.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <section id="reserve" className="bg-[#f4f2e9] px-5 py-20 md:px-10 md:py-32">
       <div className="mx-auto grid max-w-[1220px] gap-12 md:grid-cols-[.7fr_1.3fr]">
@@ -808,25 +831,29 @@ function Reservation() {
           </Reveal>
         ) : (
           <Reveal>
-            <form onSubmit={(event) => { event.preventDefault(); setSubmitted(true); }} className="grid gap-7 border-t border-[#242522]/20 pt-8 md:border-l md:border-t-0 md:pl-16" data-testid="form-reservation">
+            <form onSubmit={submitReservation} className="grid gap-7 border-t border-[#242522]/20 pt-8 md:border-l md:border-t-0 md:pl-16" data-testid="form-reservation">
               <label className="block">
                 <span className="eyebrow text-[#84373d]">Your name</span>
                 <input required value={form.name} onChange={(event) => update('name', event.target.value)} data-testid="input-reservation-name" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none placeholder:text-[#242522]/35 focus:border-[#84373d]" placeholder="How should we address you?" />
               </label>
               <div className="grid gap-7 sm:grid-cols-2">
                 <label className="block">
-                  <span className="eyebrow text-[#84373d]">Email address</span>
-                  <input required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} data-testid="input-reservation-email" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none placeholder:text-[#242522]/35 focus:border-[#84373d]" placeholder="you@example.com" />
+                  <span className="eyebrow text-[#84373d]">Phone number</span>
+                  <input required type="tel" autoComplete="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} data-testid="input-reservation-phone" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none placeholder:text-[#242522]/35 focus:border-[#84373d]" placeholder="Your best contact number" />
                 </label>
                 <label className="block">
                   <span className="eyebrow text-[#84373d]">Preferred date</span>
-                  <input required type="date" value={form.date} onChange={(event) => update('date', event.target.value)} data-testid="input-reservation-date" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none focus:border-[#84373d]" />
+                  <input required type="date" min={new Date().toISOString().slice(0, 10)} value={form.date} onChange={(event) => update('date', event.target.value)} data-testid="input-reservation-date" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none focus:border-[#84373d]" />
                 </label>
               </div>
               <label className="block">
+                <span className="eyebrow text-[#84373d]">Preferred time</span>
+                <input required type="time" min="17:30" max="23:00" step="1800" value={form.time} onChange={(event) => update('time', event.target.value)} data-testid="input-reservation-time" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none focus:border-[#84373d]" />
+              </label>
+              <label className="block">
                 <span className="eyebrow text-[#84373d]">Party size</span>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {['2 guests', '3 guests', '4 guests', '5+ guests'].map((value) => (
+                  {partySizes.map((value) => (
                     <motion.button type="button" key={value} onClick={() => setGuests(value)} data-testid={`button-guests-${value.split(' ')[0]}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`border px-3 py-2 text-xs transition-colors ${guests === value ? 'border-[#242522] bg-[#242522] text-[#f4f2e9]' : 'border-[#242522]/25 text-[#242522]/75 hover:border-[#242522]'}`}>{value}</motion.button>
                   ))}
                 </div>
@@ -835,10 +862,11 @@ function Reservation() {
                 <span className="eyebrow text-[#84373d]">A note for us <span className="text-[#242522]/50">(optional)</span></span>
                 <textarea value={form.note} onChange={(event) => update('note', event.target.value)} data-testid="input-reservation-note" className="mt-3 min-h-20 w-full resize-y border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none placeholder:text-[#242522]/35 focus:border-[#84373d]" placeholder="A birthday, a preference, a little secret..." />
               </label>
-              <motion.button type="submit" data-testid="button-submit-reservation" whileHover={{ scale: 1.01, backgroundColor: '#242522' }} whileTap={{ scale: 0.98 }} className="group flex w-full items-center justify-between bg-[#84373d] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[.17em] text-[#f4f2e9] transition-colors">
-                <span>Send reservation enquiry</span>
+              <motion.button type="submit" disabled={isSubmitting} data-testid="button-submit-reservation" whileHover={{ scale: 1.01, backgroundColor: '#242522' }} whileTap={{ scale: 0.98 }} className="group flex w-full items-center justify-between bg-[#84373d] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[.17em] text-[#f4f2e9] transition-colors disabled:cursor-wait disabled:opacity-70">
+                <span>{isSubmitting ? 'Sending enquiry…' : 'Send reservation enquiry'}</span>
                 <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
               </motion.button>
+              {error && <p role="alert" className="text-sm text-[#84373d]">{error}</p>}
               <p className="text-xs leading-5 text-[#242522]/60">This is an enquiry, not a confirmed booking. We will respond within one working day.</p>
             </form>
           </Reveal>
@@ -958,6 +986,8 @@ function FloatingActions() {
 function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dish, setDish] = useState<Dish | null>(null);
+  const [dishes, setDishes] = useState<Dish[]>(menuDishes);
+  const [categories, setCategories] = useState(menuCategories);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const goToReserve = () => document.getElementById('reserve')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   const stepGallery = (dir: number) => setGalleryIndex((current) => current === null ? null : (current + dir + gallery.length) % gallery.length);
@@ -968,12 +998,36 @@ function Home() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [galleryIndex]);
   useEffect(() => { document.title = 'Enate \u2014 Ethiopian & Eritrean Restaurant'; const description = document.querySelector('meta[name="description"]') ?? document.createElement('meta'); description.setAttribute('name', 'description'); description.setAttribute('content', 'Enate is an Ethiopian and Eritrean restaurant in London. Berbere, injera, buna and generous tables.'); document.head.appendChild(description); }, []);
+  useEffect(() => {
+    const updateMenu = () => {
+      const stored = readStoredMenu();
+      if (stored) setDishes(stored.filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
+    };
+    updateMenu();
+    window.addEventListener('storage', updateMenu);
+    return () => window.removeEventListener('storage', updateMenu);
+  }, []);
+  useEffect(() => {
+    const updateCategories = () => {
+      const stored = readStoredCategories();
+      if (stored) setCategories(menuTabs(stored));
+    };
+    fetch('/api/categories')
+      .then((response) => response.json() as Promise<{ categories?: string[] }>)
+      .then((result) => {
+        if (result.categories) setCategories(menuTabs(result.categories));
+        else updateCategories();
+      })
+      .catch(updateCategories);
+    window.addEventListener('storage', updateCategories);
+    return () => window.removeEventListener('storage', updateCategories);
+  }, []);
   return (
     <main className="site-shell grain min-h-[100dvh]">
       <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <IntroStory />
-      <MenuSection onDish={setDish} />
+      <MenuSection dishes={dishes} categories={categories} onDish={setDish} />
       <SpecialSection />
       <GallerySection onOpen={setGalleryIndex} />
       <Reviews />

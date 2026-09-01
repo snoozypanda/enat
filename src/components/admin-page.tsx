@@ -1,36 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Settings, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
 import { menuCategories, menuDishes } from '@/lib/menu';
+import { MENU_STORAGE_KEY, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
+import type { Reservation } from '@/lib/reservations';
+import { CATEGORY_STORAGE_KEY, defaultMenuCategories, readStoredCategories } from '@/lib/category-storage';
 
 /* ─── Types ─── */
 
-type MenuItem = {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  detail: string;
-  price: string;
-  image: string;
-  tag: string;
-  available: boolean;
-};
+type MenuItem = StoredMenuItem;
 
-type AdminView = 'dashboard' | 'menu' | 'categories' | 'reservations' | 'settings';
+type AdminView = 'dashboard' | 'menu' | 'categories' | 'reservations';
 
 /* ─── Mock Data ─── */
 
-const STORAGE_KEY = 'enat-admin-menu-v2';
-const CATEGORIES = menuCategories.filter((category) => category !== 'the full menu');
+const CATEGORIES = defaultMenuCategories;
 
 function getStoredMenu(): MenuItem[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch { /* noop */ }
+  const stored = readStoredMenu();
+  if (stored) {
+    return stored.map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item);
+  }
   return menuDishes.map((item) => ({ ...item, available: true }));
 
   /* Legacy mock data retained below only for reference. */
@@ -79,8 +71,82 @@ function getStoredMenu(): MenuItem[] {
 /* ─── Admin Page ─── */
 
 export default function AdminPage() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/session')
+      .then((response) => response.json() as Promise<{ authenticated?: boolean }>)
+      .then((result) => setAuthenticated(result.authenticated === true))
+      .catch(() => setAuthenticated(false));
+  }, []);
+
+  if (authenticated === null) return <div className="flex min-h-screen items-center justify-center bg-[#1a1b19] text-sm text-[#f4f2e9]/60">Checking admin access…</div>;
+  if (!authenticated) return <AdminLogin onAuthenticated={() => setAuthenticated(true)} />;
+  return <AdminDashboard />;
+}
+
+function AdminLogin({ onAuthenticated }: { onAuthenticated: () => void }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not sign in.');
+      onAuthenticated();
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'Could not sign in.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[#242522] text-[#f4f2e9]">
+      <div className="absolute left-0 top-0 h-2 w-full bg-[#f3cf22]" />
+      <div className="mx-auto grid min-h-screen max-w-[1440px] lg:grid-cols-[1.1fr_.9fr]">
+        <section className="relative hidden overflow-hidden bg-[#f3cf22] px-10 py-12 text-[#242522] lg:flex lg:flex-col lg:justify-between xl:px-16">
+          <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(36,37,34,.25)_1px,transparent_1px),linear-gradient(90deg,rgba(36,37,34,.25)_1px,transparent_1px)] [background-size:22px_22px]" />
+          <div className="relative flex items-center gap-3">
+            <img src="/menu-assets/enate-logo-transparent.png" alt="Enate" className="h-12 w-12 object-contain" />
+            <div><span className="text-sm font-bold uppercase tracking-[.18em]">Enate</span><span className="block text-[10px] font-bold uppercase tracking-[.15em] text-[#242522]/60">Restaurant admin</span></div>
+          </div>
+          <div className="relative max-w-xl pb-10">
+            <p className="text-[11px] font-bold uppercase tracking-[.18em]">The house, behind the scenes</p>
+            <h1 className="mt-7 text-[clamp(4.5rem,9vw,8.5rem)] font-black leading-[.78] tracking-[-.08em]">Make room<br /><span className="text-[#84373d]">for good.</span></h1>
+            <p className="mt-10 max-w-sm text-base leading-7 text-[#242522]/75">Manage the menu, keep an eye on reservations, and make every table feel looked after.</p>
+          </div>
+          <span className="relative text-[10px] font-bold uppercase tracking-[.16em] text-[#242522]/55">Addis / Asmara / London</span>
+        </section>
+        <section className="relative flex min-h-screen items-center justify-center px-5 py-16 sm:px-10">
+          <div className="absolute right-0 top-0 h-48 w-48 rounded-bl-full bg-[#84373d]/35" />
+          <form onSubmit={submit} className="relative w-full max-w-md">
+            <div className="flex items-center gap-3 lg:hidden"><img src="/menu-assets/enate-logo-transparent.png" alt="Enate" className="h-12 w-12 object-contain" /><span className="text-xs font-bold uppercase tracking-[.18em]">Enate admin</span></div>
+            <div className="mt-12 flex items-center gap-3 text-[#f3cf22]"><span className="h-[3px] w-10 bg-[#f3cf22]" /><span className="text-[10px] font-bold uppercase tracking-[.16em]">A place for the details</span></div>
+            <h2 className="mt-6 text-[clamp(3.5rem,7vw,5.5rem)] font-black leading-[.8] tracking-[-.07em]">Welcome<br /><span className="text-[#f3cf22]">back.</span></h2>
+            <p className="mt-6 max-w-sm text-sm leading-6 text-[#f4f2e9]/65">Sign in to manage the restaurant.</p>
+            <label className="mt-10 block text-[10px] font-bold uppercase tracking-[.16em] text-[#f4f2e9]/55">Admin password
+              <input required type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-3 w-full border-0 border-b-2 border-[#f4f2e9]/25 bg-transparent px-0 py-3 text-xl text-[#f4f2e9] outline-none transition-colors placeholder:text-[#f4f2e9]/25 focus:border-[#f3cf22]" placeholder="Enter your password" />
+            </label>
+            {error && <p role="alert" className="mt-4 text-sm text-[#f3cf22]">{error}</p>}
+            <button type="submit" disabled={isSubmitting} className="group mt-10 flex w-full items-center justify-between bg-[#f3cf22] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[.17em] text-[#242522] transition-transform hover:translate-x-1 disabled:opacity-70"><span>{isSubmitting ? 'Opening the door…' : 'Enter the house'}</span><ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></button>
+            <a href="/" className="mt-7 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/45 transition-colors hover:text-[#f3cf22]"><ArrowLeft size={13} /> Back to restaurant</a>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function AdminDashboard() {
   const [view, setView] = useState<AdminView>('dashboard');
   const [menuItems, setMenuItems] = useState<MenuItem[]>(getStoredMenu);
+  const [categories, setCategories] = useState<string[]>(() => readStoredCategories() || CATEGORIES);
   const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
@@ -88,8 +154,19 @@ export default function AdminPage() {
 
   // Persist to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
+    localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menuItems));
   }, [menuItems]);
+
+  useEffect(() => {
+    localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((response) => response.json() as Promise<{ categories?: string[] }>)
+      .then((result) => { if (result.categories) setCategories(result.categories); })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     document.title = 'Enat Admin — Dashboard';
@@ -114,6 +191,19 @@ export default function AdminPage() {
     setMenuItems((prev) => prev.map((m) => m.id === id ? { ...m, available: !m.available } : m));
   };
 
+  const addCategory = async (name: string) => {
+    const category = name.trim().toLowerCase();
+    if (!category || categories.includes(category)) return false;
+    try {
+      const response = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: category }) });
+      if (!response.ok) return false;
+      setCategories((current) => [...current, category]);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const stats = {
     totalItems: menuItems.length,
     categories: [...new Set(menuItems.map((m) => m.category))].length,
@@ -126,7 +216,6 @@ export default function AdminPage() {
     { icon: Utensils, label: 'Menu Items', view: 'menu' },
     { icon: List, label: 'Categories', view: 'categories' },
     { icon: CalendarDays, label: 'Reservations', view: 'reservations' },
-    { icon: Settings, label: 'Settings', view: 'settings' },
   ];
 
   // Close sidebar on mobile when navigating
@@ -232,6 +321,7 @@ export default function AdminPage() {
               <motion.div key="menu" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
                 <MenuItemsView
                   items={menuItems}
+                  categories={categories}
                   onEdit={(item) => { setEditItem(item); setShowForm(true); }}
                   onDelete={(id) => setDeleteConfirm(id)}
                   onToggle={toggleAvailability}
@@ -240,17 +330,12 @@ export default function AdminPage() {
             )}
             {view === 'categories' && (
               <motion.div key="categories" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-                <CategoriesView items={menuItems} />
+                <CategoriesView items={menuItems} categories={categories} onAdd={addCategory} />
               </motion.div>
             )}
             {view === 'reservations' && (
               <motion.div key="reservations" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-                <PlaceholderView title="Reservations" description="Connect your backend to manage reservations. This view will display incoming booking requests." icon={CalendarDays} />
-              </motion.div>
-            )}
-            {view === 'settings' && (
-              <motion.div key="settings" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-                <PlaceholderView title="Settings" description="Restaurant settings, opening hours, contact details, and WhatsApp number will be configurable here once the backend is connected." icon={Settings} />
+                <ReservationsView />
               </motion.div>
             )}
           </AnimatePresence>
@@ -262,6 +347,7 @@ export default function AdminPage() {
         {showForm && (
           <MenuItemForm
             item={editItem}
+            categories={categories}
             onSave={saveItem}
             onClose={() => { setShowForm(false); setEditItem(null); }}
           />
@@ -387,7 +473,7 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
                 <span className="ml-2 text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">{item.category}</span>
               </div>
               <span className="font-mono text-sm text-[#f3cf22]">£{item.price}</span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${item.available ? 'bg-[#25D366]/15 text-[#25D366]' : 'bg-[#84373d]/15 text-[#84373d]'}`}>
+              <span className={`inline-flex min-w-[78px] justify-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${item.available ? 'bg-[#25D366]/15 text-[#25D366]' : 'bg-[#84373d]/15 text-[#84373d]'}`}>
                 {item.available ? 'Available' : 'Hidden'}
               </span>
             </div>
@@ -400,15 +486,16 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
 
 /* ─── Menu Items View ─── */
 
-function MenuItemsView({ items, onEdit, onDelete, onToggle }: {
+function MenuItemsView({ items, categories, onEdit, onDelete, onToggle }: {
   items: MenuItem[];
+  categories: string[];
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string) => void;
 }) {
   const [filter, setFilter] = useState('all');
   const filtered = filter === 'all' ? items : items.filter((item) => item.category === filter);
-  const allCategories = ['all', ...CATEGORIES];
+  const allCategories = ['all', ...categories];
 
   return (
     <div>
@@ -468,7 +555,7 @@ function MenuItemsView({ items, onEdit, onDelete, onToggle }: {
                     <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">{item.tag}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <button type="button" onClick={() => onToggle(item.id)} className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase transition-colors ${item.available ? 'bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25' : 'bg-[#84373d]/15 text-[#84373d] hover:bg-[#84373d]/25'}`}>
+                    <button type="button" onClick={() => onToggle(item.id)} className={`inline-flex min-w-[78px] justify-center whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold uppercase transition-colors ${item.available ? 'bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25' : 'bg-[#84373d]/15 text-[#84373d] hover:bg-[#84373d]/25'}`}>
                       {item.available ? 'Available' : 'Hidden'}
                     </button>
                   </td>
@@ -497,15 +584,33 @@ function MenuItemsView({ items, onEdit, onDelete, onToggle }: {
 
 /* ─── Categories View ─── */
 
-function CategoriesView({ items }: { items: MenuItem[] }) {
+function CategoriesView({ items, categories, onAdd }: { items: MenuItem[]; categories: string[]; onAdd: (name: string) => Promise<boolean> }) {
   const categoryCounts = items.reduce<Record<string, number>>((acc, item) => {
     acc[item.category] = (acc[item.category] || 0) + 1;
     return acc;
   }, {});
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+
+  const submitCategory = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (await onAdd(name)) {
+      setName('');
+      setError('');
+    } else {
+      setError('Enter a new category name.');
+    }
+  };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {CATEGORIES.map((cat, i) => {
+    <div>
+      <form onSubmit={submitCategory} className="mb-6 flex flex-col gap-3 rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-5 sm:flex-row">
+        <input required value={name} onChange={(event) => setName(event.target.value)} placeholder="New category, e.g. desserts" className="min-w-0 flex-1 rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" />
+        <button type="submit" className="flex items-center justify-center gap-2 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522]"><Plus size={15} /> Add category</button>
+      </form>
+      {error && <p role="alert" className="mb-4 text-sm text-[#f3cf22]">{error}</p>}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {categories.map((cat, i) => {
         const count = categoryCounts[cat] || 0;
         const catItems = items.filter((item) => item.category === cat);
         return (
@@ -536,38 +641,169 @@ function CategoriesView({ items }: { items: MenuItem[] }) {
           </motion.div>
         );
       })}
+      </div>
     </div>
   );
 }
 
 /* ─── Placeholder View ─── */
 
-function PlaceholderView({ title, description, icon: Icon }: { title: string; description: string; icon: typeof Settings }) {
+type ReservationPeriod = 'today' | 'this-week' | 'this-month' | 'last-month' | 'upcoming' | 'all';
+
+function localDate(value: string): Date {
+  return new Date(`${value}T12:00:00`);
+}
+
+function sameCalendarDay(first: Date, second: Date): boolean {
+  return first.getFullYear() === second.getFullYear() && first.getMonth() === second.getMonth() && first.getDate() === second.getDate();
+}
+
+function matchesReservationPeriod(reservation: Reservation, period: ReservationPeriod): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const date = localDate(reservation.date);
+  if (period === 'all') return true;
+  if (period === 'today') return sameCalendarDay(date, today);
+  if (period === 'upcoming') return date >= today;
+  if (period === 'this-week') {
+    const start = new Date(today);
+    start.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return date >= start && date <= end;
+  }
+  if (period === 'this-month') return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
+  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  return date.getFullYear() === lastMonth.getFullYear() && date.getMonth() === lastMonth.getMonth();
+}
+
+function ReservationsView() {
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [period, setPeriod] = useState<ReservationPeriod>('upcoming');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadReservations = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/reservations');
+      const result: { reservations?: Reservation[]; error?: string } = await response.json();
+      if (!response.ok || !result.reservations) throw new Error(result.error || 'Could not load reservations.');
+      setReservations(result.reservations);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Could not load reservations.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadReservations(); }, []);
+  const filteredReservations = reservations.filter((reservation) => matchesReservationPeriod(reservation, period));
+  const periods: { value: ReservationPeriod; label: string }[] = [
+    { value: 'today', label: 'Today' },
+    { value: 'this-week', label: 'This week' },
+    { value: 'this-month', label: 'This month' },
+    { value: 'last-month', label: 'Last month' },
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'all', label: 'The book' },
+  ];
+
   return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-      <motion.div
-        initial={{ scale: 0, rotate: -15 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', damping: 15 }}
-        className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f3cf22]/10"
-      >
-        <Icon size={28} className="text-[#f3cf22]" />
-      </motion.div>
-      <h2 className="mt-5 text-xl font-bold">{title}</h2>
-      <p className="mt-2 max-w-sm text-sm text-[#f4f2e9]/50">{description}</p>
-      <span className="mt-6 rounded-full bg-[#f4f2e9]/5 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/30">Coming soon</span>
+    <div>
+      <div className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-6">
+        <h2 className="text-xl font-bold">Reservation enquiries</h2>
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <p className="text-sm text-[#f4f2e9]/55">New booking requests from the restaurant website.</p>
+          <button type="button" onClick={() => void loadReservations()} disabled={isLoading} className="shrink-0 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522] disabled:opacity-70">{isLoading ? 'Loading…' : 'Refresh'}</button>
+        </div>
+        {error && <p role="alert" className="mt-3 text-sm text-[#f3cf22]">{error}</p>}
+      </div>
+
+      <div className="mt-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {periods.map((item) => <button key={item.value} type="button" onClick={() => setPeriod(item.value)} className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${period === item.value ? 'bg-[#f3cf22] text-[#242522]' : 'border border-[#f4f2e9]/15 text-[#f4f2e9]/55 hover:text-[#f4f2e9]'}`}>{item.label}</button>)}
+      </div>
+
+      {filteredReservations.length > 0 ? (
+        <>
+        <div className="mt-6 grid gap-3 md:hidden">
+          {filteredReservations.map((reservation) => (
+            <article key={reservation.id} className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-4">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{reservation.name}</h3><a href={`tel:${reservation.phone.replace(/[^+\d]/g, '')}`} className="mt-1 block text-sm text-[#f3cf22]">{reservation.phone}</a></div><span className="shrink-0 rounded-full bg-[#f3cf22]/15 px-2 py-0.5 text-[10px] font-bold uppercase text-[#f3cf22]">{reservation.status}</span></div>
+              <div className="mt-4 grid grid-cols-2 gap-3 border-y border-[#f4f2e9]/10 py-3 text-xs"><span className="text-[#f4f2e9]/50">Date <strong className="mt-1 block text-sm text-[#f4f2e9]">{reservation.date}</strong></span><span className="text-[#f4f2e9]/50">Time & party <strong className="mt-1 block text-sm text-[#f4f2e9]">{reservation.time} · {reservation.guests}</strong></span></div>
+              {reservation.note && <p className="mt-3 text-sm leading-5 text-[#f4f2e9]/65">{reservation.note}</p>}
+            </article>
+          ))}
+        </div>
+        <div className="mt-6 hidden overflow-x-auto rounded-lg border border-[#f4f2e9]/10 bg-[#242522] md:block">
+          <table className="min-w-[720px] w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-[#f4f2e9]/10 text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/40">
+                <th className="px-4 py-3">Guest</th>
+                <th className="px-4 py-3">Date & time</th>
+                <th className="px-4 py-3">Party</th>
+                <th className="px-4 py-3">Note</th>
+                <th className="px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f4f2e9]/5">
+              {filteredReservations.map((reservation) => (
+                <tr key={reservation.id}>
+                  <td className="px-4 py-3"><span className="block font-medium">{reservation.name}</span><a href={`tel:${reservation.phone.replace(/[^+\d]/g, '')}`} className="text-xs text-[#f4f2e9]/50 hover:text-[#f3cf22]">{reservation.phone}</a></td>
+                  <td className="px-4 py-3 text-[#f4f2e9]/70">{reservation.date} · {reservation.time}</td>
+                  <td className="px-4 py-3 text-[#f3cf22]">{reservation.guests}</td>
+                  <td className="max-w-xs px-4 py-3 text-[#f4f2e9]/60">{reservation.note || '—'}</td>
+                  <td className="px-4 py-3"><span className="rounded-full bg-[#f3cf22]/15 px-2 py-0.5 text-[10px] font-bold uppercase text-[#f3cf22]">{reservation.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        </>
+      ) : (
+        <div className="mt-6 rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/45">No reservations in this view.</div>
+      )}
     </div>
   );
 }
 
 /* ─── Menu Item Form (Add/Edit Modal) ─── */
 
-function MenuItemForm({ item, onSave, onClose }: { item: MenuItem | null; onSave: (item: MenuItem) => void; onClose: () => void }) {
+async function createMenuThumbnail(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('Choose an image file.');
+  if (file.size > 10 * 1024 * 1024) throw new Error('Choose an image smaller than 10 MB.');
+
+  const sourceUrl = URL.createObjectURL(file);
+  const source = new Image();
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      source.onload = () => resolve();
+      source.onerror = () => reject(new Error('That image could not be read.'));
+      source.src = sourceUrl;
+    });
+
+    const maxSide = 900;
+    const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Your browser could not prepare this image.');
+    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.86);
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | null; categories: string[]; onSave: (item: MenuItem) => void; onClose: () => void }) {
   const isEdit = !!item;
   const [form, setForm] = useState<MenuItem>(item || {
     id: `item-${Date.now()}`,
     name: '',
-    category: CATEGORIES[0],
+    category: categories[0],
     description: '',
     detail: '',
     price: '',
@@ -575,12 +811,26 @@ function MenuItemForm({ item, onSave, onClose }: { item: MenuItem | null; onSave
     tag: '',
     available: true,
   });
+  const [imageError, setImageError] = useState('');
 
   const update = (key: keyof MenuItem, value: string | boolean) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+  };
+
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImageError('');
+    try {
+      update('image', await createMenuThumbnail(file));
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : 'The image could not be uploaded.');
+    } finally {
+      event.target.value = '';
+    }
   };
 
   return (
@@ -616,7 +866,7 @@ function MenuItemForm({ item, onSave, onClose }: { item: MenuItem | null; onSave
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Category</label>
               <select value={form.category} onChange={(e) => update('category', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]">
-                {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
             <div>
@@ -641,10 +891,20 @@ function MenuItemForm({ item, onSave, onClose }: { item: MenuItem | null; onSave
               <input value={form.tag} onChange={(e) => update('tag', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" placeholder="e.g. vegan, house favourite" />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Image Path</label>
-              <input value={form.image} onChange={(e) => update('image', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" placeholder="/menu-assets/image.jpg" />
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Upload dish photo</label>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="mt-1 block w-full text-xs text-[#f4f2e9]/60 file:mr-3 file:rounded-md file:border-0 file:bg-[#f3cf22] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#242522]" />
+              <p className="mt-1 text-[10px] leading-4 text-[#f4f2e9]/40">Use the photo of this exact dish. It is resized for a consistent menu thumbnail.</p>
             </div>
           </div>
+
+          {imageError && <p role="alert" className="text-xs text-[#f3cf22]">{imageError}</p>}
+
+          {form.image && (
+            <div className="flex items-center gap-3 rounded-md border border-[#f4f2e9]/10 bg-[#1a1b19] p-3">
+              <img src={form.image} alt={`Preview for ${form.name || 'menu item'}`} className="h-16 w-16 rounded-sm object-cover" />
+              <p className="text-xs leading-5 text-[#f4f2e9]/55">This photo will be used as the thumbnail and dish image on the menu.</p>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <button
