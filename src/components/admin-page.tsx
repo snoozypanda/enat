@@ -182,22 +182,41 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    fetch('/api/menu')
+      .then((response) => response.json() as Promise<{ items?: MenuItem[] | null }>)
+      .then((result) => { if (result.items) setMenuItems(result.items); })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Enat Admin — Dashboard';
   }, []);
 
-  const saveItem = (item: MenuItem) => {
-    setMenuItems((prev) => {
-      const exists = prev.find((m) => m.id === item.id);
-      if (exists) return prev.map((m) => m.id === item.id ? item : m);
-      return [...prev, item];
-    });
-    setEditItem(null);
-    setShowForm(false);
+  const persistMenu = async (nextMenu: MenuItem[]) => {
+    setAvailabilityError('');
+    try {
+      const response = await fetch('/api/menu', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: nextMenu }) });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not save the menu.');
+      setMenuItems(nextMenu);
+      return true;
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not save the menu.');
+      return false;
+    }
   };
 
-  const deleteItem = (id: string) => {
-    setMenuItems((prev) => prev.filter((m) => m.id !== id));
-    setDeleteConfirm(null);
+  const saveItem = async (item: MenuItem) => {
+    const exists = menuItems.some((entry) => entry.id === item.id);
+    const nextMenu = exists ? menuItems.map((entry) => entry.id === item.id ? item : entry) : [...menuItems, item];
+    if (await persistMenu(nextMenu)) {
+      setEditItem(null);
+      setShowForm(false);
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    if (await persistMenu(menuItems.filter((item) => item.id !== id))) setDeleteConfirm(null);
   };
 
   const toggleAvailability = async (id: string) => {
@@ -546,8 +565,47 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
         ))}
       </div>
 
-      {/* Items Table */}
-      <div className="overflow-x-auto rounded-lg border border-[#f4f2e9]/10 bg-[#242522]">
+      {/* Mobile item cards */}
+      <div className="space-y-3 md:hidden">
+        <AnimatePresence>
+          {filtered.map((item, i) => (
+            <motion.article
+              key={item.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ delay: i * 0.025 }}
+              className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-[#84373d]">
+                  <img src={item.image} alt="" className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-base font-bold">{item.name}</h3>
+                  <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/45">{item.category}{item.tag ? ` · ${item.tag}` : ''}</p>
+                </div>
+                <span className="shrink-0 font-mono text-lg text-[#f3cf22]">£{item.price}</span>
+              </div>
+              <div className="mt-3 flex items-center gap-2 border-t border-[#f4f2e9]/10 pt-3">
+                <button type="button" disabled={savingAvailabilityId === item.id} onClick={() => void onToggle(item.id)} className={`min-w-0 flex-1 rounded-md px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-60 ${item.available ? 'bg-[#25D366]/15 text-[#25D366]' : 'bg-[#84373d]/15 text-[#84373d]'}`}>
+                  {savingAvailabilityId === item.id ? 'Saving…' : item.available ? 'Available' : 'Hidden'}
+                </button>
+                <motion.button type="button" onClick={() => onEdit(item)} whileTap={{ scale: 0.94 }} className="flex h-9 items-center gap-1.5 rounded-md border border-[#f4f2e9]/15 px-3 text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/70 hover:border-[#f3cf22] hover:text-[#f3cf22]">
+                  <Edit3 size={13} /> Edit
+                </motion.button>
+                <motion.button type="button" onClick={() => onDelete(item.id)} whileTap={{ scale: 0.9 }} aria-label={`Delete ${item.name}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#f4f2e9]/15 text-[#f4f2e9]/55 hover:border-[#84373d] hover:text-[#84373d]">
+                  <Trash2 size={14} />
+                </motion.button>
+              </div>
+            </motion.article>
+          ))}
+        </AnimatePresence>
+        {filtered.length === 0 && <div className="rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/40">No items in this category.</div>}
+      </div>
+
+      {/* Desktop items table */}
+      <div className="hidden overflow-x-auto rounded-lg border border-[#f4f2e9]/10 bg-[#242522] md:block">
         <table className="min-w-[600px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-[#f4f2e9]/10 text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/40">

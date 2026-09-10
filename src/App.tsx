@@ -63,6 +63,13 @@ const gallery = [
   { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmPojEEkUSIvqQdiPfngtMwGVlPE4RkARkfH96_-oxcz4z5AwCbZQV6xBmSm277MPXGDaVjzgGZ70LEILaAxBxWbARm6_tyqCNfY2VI0UVEY9zWtvsKjDFr5Y0SNKS232Qgb2ieg3zg5KYht=w1200-h1200-n-k-no', alt: 'Public food photo from Enate Restaurant', title: 'Food made to share' },
   { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmM1lmihhNBoszIugRDYyKDGq8rhW0yQpQsLzoHiLPV3drC0OsPZV66sR9vvLGhbHwUSgect1YggicvJLtT2HkpLAogfICQnMkAIj_lbwwAkj1ARHWLRExCLIuM_IJQ8_YGupKXIkGuya5ep=w1200-h1200-n-k-no', alt: 'Public photo from Enate Restaurant in London', title: 'Flavour at the table' },
   { src: 'https://lh3.googleusercontent.com/grass-cs/ACvplmO60qDShAg0z9elOTF0CH3gyibh9bDw_3hqZQQUygwJgro_-YdK5fo3kdgTaSbjORTJNfzLj6ng71Xvl5ixdCDYL1B2E92h1iGCNeJ5kA10RiyHLgPsUlqBRY-b1T4Q6Eu2NHzYWlWVgyOo=w1200-h1800-p-k-no', alt: 'Customer food photo from David Andrew’s Google review of Enate Restaurant', title: 'David Andrew’s review' },
+  { src: '/room-gallery/fish-rice-salad.jpg', alt: 'Fish, rice and salad at Enate', title: 'Fresh from the kitchen' },
+  { src: '/room-gallery/doro-lega.jpg', alt: 'Doro dish at Enate', title: 'Slow-cooked warmth' },
+  { src: '/room-gallery/house-specials.jpg', alt: 'House specials at Enate', title: 'The house spread' },
+  { src: '/room-gallery/kitfo-and-tibs.jpg', alt: 'Kitfo and tibs at Enate', title: 'The centre of the table' },
+  { src: '/room-gallery/dishes-to-share.jpg', alt: 'Ethiopian dishes to share at Enate', title: 'A generous table' },
+  { src: '/room-gallery/maheberawi.jpg', alt: 'Maheberawi platter at Enate', title: 'Maheberawi' },
+  { src: '/room-gallery/injera-feast.jpg', alt: 'Injera feast at Enate', title: 'Injera, shared' },
 ];
 
 /* ─── Animation helpers ─── */
@@ -268,55 +275,24 @@ function Hero({ onReserve, onMenu }: { onReserve: () => void; onMenu: () => void
       <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 pb-9 pt-36 md:px-10 md:pb-20">
         <div className="grid items-end gap-10 md:grid-cols-[1fr_260px]">
           <div>
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
-              className="mb-7 flex items-center gap-3 text-[#f3cf22]"
-            >
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] as const }} className="mb-7 flex items-center gap-3 text-[#f3cf22]">
               <span className="gold-rule" />
-              <span className="eyebrow">Ethiopian + Eritrean / Soho, London</span>
+              <span className="eyebrow">Ethiopian and Eritrean Cuisine / Soho, London</span>
             </motion.div>
             <div className="overflow-hidden">
-              <motion.h1
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] as const }}
-                className="display max-w-4xl text-[clamp(5.2rem,17vw,13rem)] leading-[.78] text-[#f4f2e9]"
-              >
+              <motion.h1 initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] as const }} className="display max-w-4xl text-[clamp(5.2rem,17vw,13rem)] leading-[.78] text-[#f4f2e9]">
                 Eat<br /><em>together.</em>
               </motion.h1>
             </div>
-            <motion.div
-              initial={{ opacity: 0, y: 25 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 1.1, ease: [0.22, 1, 0.36, 1] as const }}
-              className="mt-9 flex flex-col gap-6 sm:flex-row sm:items-end"
-            >
+            <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 1.1, ease: [0.22, 1, 0.36, 1] as const }} className="mt-9 flex flex-col gap-6 sm:flex-row sm:items-end">
               <p className="max-w-[270px] text-sm leading-6 text-[#f4f2e9]/78">A loud, generous table of berbere, injera and buna. Food from home, made for this city.</p>
-              <motion.button
-                type="button"
-                onClick={onReserve}
-                data-testid="button-hero-reserve"
-                whileHover={{ scale: 1.04, backgroundColor: '#f4f2e9' }}
-                whileTap={{ scale: 0.97 }}
-                className="group flex w-fit items-center gap-4 bg-[#f3cf22] px-5 py-4 text-[11px] font-bold uppercase tracking-[.16em] text-[#242522] transition-colors"
-              >
-                <span>Find your table</span>
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              <motion.button type="button" onClick={onReserve} data-testid="button-hero-reserve" whileHover={{ scale: 1.04, backgroundColor: '#f4f2e9' }} whileTap={{ scale: 0.97 }} className="group flex w-fit items-center gap-4 bg-[#f3cf22] px-5 py-4 text-[11px] font-bold uppercase tracking-[.16em] text-[#242522] transition-colors">
+                <span>Find your table</span><ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </motion.button>
             </motion.div>
           </div>
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 1.3, ease: [0.22, 1, 0.36, 1] as const }}
-            className="hidden md:block"
-          >
-            <div className="border-l border-[#f4f2e9]/35 pl-5">
-              <span className="eyebrow text-[#f3cf22]">Tonight, in the middle</span>
-              <p className="mt-4 font-mono text-xs leading-6 text-[#f4f2e9]/70">Injera is the plate.<br />Your hands are the cutlery.<br />Nobody eats alone.</p>
-            </div>
+          <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 1.3, ease: [0.22, 1, 0.36, 1] as const }} className="hidden md:block">
+            <div className="border-l border-[#f4f2e9]/35 pl-5"><span className="eyebrow text-[#f3cf22]">Tonight, in the middle</span><p className="mt-4 font-mono text-xs leading-6 text-[#f4f2e9]/70">Injera is the plate.<br />Your hands are the cutlery.<br />Nobody eats alone.</p></div>
           </motion.div>
         </div>
       </div>
@@ -598,44 +574,61 @@ function SpecialSection() {
 
 function GallerySection({ onOpen }: { onOpen: (index: number) => void }) {
   return (
-    <section id="the-room" className="bg-[#f4f2e9] px-5 py-20 md:px-10 md:py-32">
+    <section id="the-room" className="overflow-hidden bg-[#f4f2e9] px-5 py-24 md:px-10 md:py-40">
       <div className="mx-auto max-w-[1220px]">
-        <div className="mb-12 flex flex-col justify-between gap-7 sm:flex-row sm:items-end">
-          <StaggerChildren stagger={0.1}>
-            <motion.div variants={staggerItem} className="mb-5 flex items-center gap-3 text-[#84373d]">
-              <span className="eyebrow">04 / Set the scene</span>
-              <span className="h-[3px] w-10 bg-[#84373d]" />
-            </motion.div>
-            <motion.h2 variants={staggerItem} className="display text-[clamp(4rem,10vw,8rem)] leading-[.76]">
-              The<br /><span className="text-[#4d684c]">room.</span>
-            </motion.h2>
-          </StaggerChildren>
-          <Reveal delay={0.3} direction="right">
-            <p className="max-w-xs text-sm leading-6 text-[#242522]/70">A welcoming table on Goldhawk Road, where Ethiopian and Eritrean cooking, music and generous plates make you feel at home.</p>
+        <div className="grid gap-8 border-t border-[#242522]/20 pt-6 md:grid-cols-[1.15fr_.85fr] md:items-end md:pt-8">
+          <Reveal direction="left">
+            <p className="eyebrow text-[#84373d]">04 / At the table</p>
+            <h2 className="display mt-5 max-w-3xl text-[clamp(3.8rem,8vw,7.5rem)] leading-[.8] text-[#242522]">FOOD IS<br /><span className="text-[#84373d]">THE ROOM.</span></h2>
+          </Reveal>
+          <Reveal delay={0.18} direction="right">
+            <p className="max-w-sm text-base leading-7 text-[#242522]/70 md:ml-auto">Ethiopian and Eritrean dishes, prepared with tradition, warmth, and a little bit of home.</p>
           </Reveal>
         </div>
-        <StaggerChildren className="grid auto-rows-[170px] grid-cols-2 gap-3 md:auto-rows-[230px] md:grid-cols-4" stagger={0.1}>
-          {gallery.map((item, index) => (
-            <motion.button
-              type="button"
-              key={item.src}
-              onClick={() => onOpen(index)}
-              data-testid={`button-gallery-${index}`}
-              variants={scaleIn}
-              whileHover={{ scale: 1.02 }}
-              className={`group relative overflow-hidden text-left ${index === 0 ? 'col-span-2 row-span-2' : index === 1 ? 'row-span-2' : ''}`}
-            >
-              <img src={item.src} alt={item.alt} loading="lazy" className="image-fade h-full w-full object-cover" />
-              <span className="absolute inset-x-3 bottom-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-[#f4f2e9] opacity-0 transition-opacity group-hover:opacity-100">
-                <span>{item.title}</span>
-                <Plus size={14} />
-              </span>
-              <span className="absolute inset-0 bg-[#242522]/0 transition-colors group-hover:bg-[#242522]/30" />
-            </motion.button>
-          ))}
-        </StaggerChildren>
+
+        <div className="mt-16 space-y-24 md:mt-24 md:space-y-36">
+          <div className="grid gap-9 md:grid-cols-[.66fr_1.25fr_.72fr] md:items-start md:gap-8 lg:gap-12">
+            <div className="order-2 md:order-1 md:pt-32">
+              <EditorialImage item={gallery[8]} index={8} onOpen={onOpen} title="A generous table" description="Dishes with enough colour, heat and texture to pass around." aspect="aspect-[4/5]" />
+            </div>
+            <div className="order-1 md:order-2">
+              <EditorialImage item={gallery[9]} index={9} onOpen={onOpen} title="Maheberawi" description="A full table, gathered around handmade injera." aspect="aspect-[4/5]" featured />
+            </div>
+            <div className="order-3 md:order-3 md:pt-52">
+              <EditorialImage item={gallery[5]} index={5} onOpen={onOpen} title="Slow-cooked lamb" description="Tender lamb, warming spice and fresh green chilli." aspect="aspect-[3/4]" />
+            </div>
+          </div>
+
+          <div className="grid gap-9 md:grid-cols-[1.18fr_.62fr_.8fr] md:items-start md:gap-8 lg:gap-12">
+            <div className="order-1">
+              <EditorialImage item={gallery[10]} index={10} onOpen={onOpen} title="Injera, shared" description="The tablecloth, the plate, and the invitation to eat together." aspect="aspect-[16/11]" featured />
+            </div>
+            <div className="order-2 md:pt-24">
+              <EditorialImage item={gallery[7]} index={7} onOpen={onOpen} title="The centre of the table" description="Kitfo, tibs and all the small details that make a meal linger." aspect="aspect-[3/4]" />
+            </div>
+            <div className="order-3 md:pt-12">
+              <EditorialImage item={gallery[6]} index={6} onOpen={onOpen} title="The house spread" description="Slow-cooked dishes, each with its own place at the table." aspect="aspect-[4/5]" />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
+  );
+}
+
+function EditorialImage({ item, index, onOpen, title, description, aspect, featured = false }: {
+  item: (typeof gallery)[number]; index: number; onOpen: (index: number) => void; title: string; description: string; aspect: string; featured?: boolean;
+}) {
+  return (
+    <motion.article initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}>
+      <motion.button type="button" onClick={() => onOpen(index)} data-testid={`button-gallery-${index}`} whileHover={{ y: -5 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className={`group block w-full overflow-hidden bg-[#ddd8ca] ${aspect}`} aria-label={`Open ${title}`}>
+        <img src={item.src} alt={item.alt} loading="lazy" className={`h-full w-full transition duration-700 ease-out group-hover:scale-[1.035] ${featured ? 'object-cover' : 'object-cover'}`} />
+      </motion.button>
+      <div className="mt-4 max-w-md">
+        <h3 className="display text-[clamp(1.8rem,2.5vw,2.7rem)] leading-none text-[#242522]">{title}</h3>
+        <p className="mt-2 text-sm leading-6 text-[#242522]/65">{description}</p>
+      </div>
+    </motion.article>
   );
 }
 
@@ -739,9 +732,9 @@ function Reviews() {
 
 function Events() {
   const events = [
-    ['18 APR', 'Spring on the injera', 'A five-course table of new-season vegetables, bright sauces and something cold to pour.'],
-    ['02 MAY', 'Buna after dark', 'An evening of coffee, cardamom and conversation, with the ceremony taking centre stage.'],
-    ['SUNDAYS', 'The long lunch', 'Three courses, no clock-watching. Bring your favourite people and stay a while.'],
+    ['01', 'Catering', 'Food made for events, occasions and large gatherings — generous Ethiopian and Eritrean dishes prepared for your table.'],
+    ['02', 'Agelgil', 'Bring the shared-table feeling to your celebration with a traditional Agelgil service, made with care for your guests.'],
+    ['03', 'Doro package', 'A comforting Doro package for sharing: slow-cooked flavour, berbere warmth and the dishes people gather around.'],
   ];
   return (
     <section id="events" className="leaf-block px-5 py-20 md:px-10 md:py-28">
@@ -913,6 +906,7 @@ function LocationFooter() {
           <div className="mt-24 flex flex-col gap-4 border-t border-[#f4f2e9]/15 pt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/40 sm:flex-row sm:justify-between">
             <span>© 2025 Enate</span>
             <span>Addis / Asmara / Soho</span>
+            <span>Powered by 4kilo Dev</span>
             <a href="#top" data-testid="link-footer-top" className="hover:text-[#f3cf22]">Back to the beginning ↑</a>
           </div>
         </Reveal>
@@ -1004,7 +998,13 @@ function Home() {
       const stored = readStoredMenu();
       if (stored) setDishes(stored.filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
     };
-    updateMenu();
+    fetch('/api/menu')
+      .then((response) => response.json() as Promise<{ items?: (Dish & { available: boolean })[] | null }>)
+      .then((result) => {
+        if (result.items) setDishes(result.items.filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
+        else updateMenu();
+      })
+      .catch(updateMenu);
     window.addEventListener('storage', updateMenu);
     return () => window.removeEventListener('storage', updateMenu);
   }, []);
