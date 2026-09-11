@@ -27,3 +27,26 @@ export function menuTabs(categories: string[]): string[] {
     ...withoutFullMenu.slice(starterIndex + 1),
   ];
 }
+
+/**
+ * Keep catalogue categories in their reference order, then include valid
+ * managed categories without ever showing an empty tab.
+ */
+export function reconcileMenuCategories(categories: string[], dishCategories: string[]): string[] {
+  const available = new Set(dishCategories.map((category) => category.trim().toLowerCase()));
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  const add = (value: string) => {
+    const category = value.trim().toLowerCase();
+    if (!category || category === 'the full menu' || !available.has(category) || seen.has(category)) return;
+    seen.add(category);
+    result.push(category);
+  };
+
+  defaultMenuCategories.forEach(add);
+  categories.forEach(add);
+  dishCategories.forEach(add);
+
+  return menuTabs(result);
+}

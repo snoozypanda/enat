@@ -153,6 +153,13 @@ function AdminDashboard() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [availabilitySavingId, setAvailabilitySavingId] = useState<string | null>(null);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timeout = window.setTimeout(() => setSuccessMessage(''), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [successMessage]);
 
   // Persist to localStorage
   useEffect(() => {
@@ -212,11 +219,16 @@ function AdminDashboard() {
     if (await persistMenu(nextMenu)) {
       setEditItem(null);
       setShowForm(false);
+      setSuccessMessage(exists ? `Menu updated — ${item.name} is now live.` : `Menu item added — ${item.name} is now live.`);
     }
   };
 
   const deleteItem = async (id: string) => {
-    if (await persistMenu(menuItems.filter((item) => item.id !== id))) setDeleteConfirm(null);
+    const item = menuItems.find((entry) => entry.id === id);
+    if (await persistMenu(menuItems.filter((entry) => entry.id !== id))) {
+      setDeleteConfirm(null);
+      setSuccessMessage(`${item?.name || 'Menu item'} was removed from the menu.`);
+    }
   };
 
   const toggleAvailability = async (id: string) => {
@@ -230,6 +242,7 @@ function AdminDashboard() {
       const result: { error?: string } = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not update availability.');
       setMenuItems((current) => current.map((entry) => entry.id === id ? { ...entry, available } : entry));
+      setSuccessMessage(`${item.name} is ${available ? 'now visible' : 'hidden'} on the menu.`);
     } catch (error) {
       setAvailabilityError(error instanceof Error ? error.message : 'Could not update availability.');
     } finally {
@@ -282,6 +295,22 @@ function AdminDashboard() {
             onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           />
+        )}
+      </AnimatePresence>
+
+      {/* Clear feedback after every menu update. */}
+      <AnimatePresence>
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            role="status"
+            aria-live="polite"
+            className="fixed right-4 top-4 z-[70] max-w-[calc(100vw-2rem)] rounded-md border border-[#25D366]/45 bg-[#242522] px-4 py-3 text-sm font-medium text-[#f4f2e9] shadow-xl"
+          >
+            <span className="mr-2 text-[#25D366]">✓</span>{successMessage}
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -937,16 +966,17 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
         exit={{ scale: 0.92, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 250 }}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-[#f4f2e9]/15 bg-[#242522] p-6"
+        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg border border-[#f4f2e9]/15 bg-[#242522]"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#f4f2e9]/10 px-6 py-4">
           <h2 className="text-lg font-bold">{isEdit ? 'Edit' : 'Add'} Menu Item</h2>
           <motion.button type="button" onClick={onClose} whileTap={{ scale: 0.9 }} className="flex h-8 w-8 items-center justify-center rounded-md border border-[#f4f2e9]/15 text-[#f4f2e9]/60">
             <X size={16} />
           </motion.button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Name</label>
             <input required value={form.name} onChange={(e) => update('name', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" placeholder="Dish name" />
@@ -995,33 +1025,36 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
               <p className="text-xs leading-5 text-[#f4f2e9]/55">This photo will be used as the thumbnail and dish image on the menu.</p>
             </div>
           )}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => update('available', !form.available)}
-              className={`relative h-6 w-11 rounded-full transition-colors ${form.available ? 'bg-[#25D366]' : 'bg-[#f4f2e9]/20'}`}
-            >
-              <motion.span
-                animate={{ x: form.available ? 20 : 2 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="absolute top-1 h-4 w-4 rounded-full bg-white"
-              />
-            </button>
-            <span className="text-xs text-[#f4f2e9]/60">Available on menu</span>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-md border border-[#f4f2e9]/20 px-4 py-2 text-sm text-[#f4f2e9]/70 hover:bg-[#f4f2e9]/5">Cancel</button>
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522]"
-            >
-              <Save size={15} />
-              {isEdit ? 'Update' : 'Create'} Item
-            </motion.button>
+          <div className="shrink-0 border-t border-[#f4f2e9]/10 px-6 py-4">
+            <div className="flex items-center gap-3 pb-4">
+              <button
+                type="button"
+                onClick={() => update('available', !form.available)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${form.available ? 'bg-[#25D366]' : 'bg-[#f4f2e9]/20'}`}
+              >
+                <motion.span
+                  animate={{ x: form.available ? 20 : 2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="absolute top-1 h-4 w-4 rounded-full bg-white"
+                />
+              </button>
+              <span className="text-xs text-[#f4f2e9]/60">Available on menu</span>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={onClose} className="rounded-md border border-[#f4f2e9]/20 px-4 py-2 text-sm text-[#f4f2e9]/70 hover:bg-[#f4f2e9]/5">Cancel</button>
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522]"
+              >
+                <Save size={15} />
+                {isEdit ? 'Update' : 'Create'} Item
+              </motion.button>
+            </div>
           </div>
         </form>
       </motion.div>

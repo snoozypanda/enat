@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: 'Enate — Ethiopian & Eritrean Restaurant',
     description: 'Vibrant Ethiopian and Eritrean food, generous plates, and coffee poured with ceremony.',
     type: 'website',
-    images: ['https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=1800'],
+    images: ['/menu-assets/enate-logo.jpg'],
   },
   twitter: {
     card: 'summary_large_image',

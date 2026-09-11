@@ -7,7 +7,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { menuCategories, menuDishes } from '@/lib/menu';
 import { readStoredMenu } from '@/lib/menu-storage';
 import { partySizes, type PartySize } from '@/lib/reservations';
-import { menuTabs, readStoredCategories } from '@/lib/category-storage';
+import { readStoredCategories, reconcileMenuCategories } from '@/lib/category-storage';
 const images = {
   hero: '/menu-assets/enat-hero.jpg',
   kitfo: '/menu-assets/enat-kitfo.jpg',
@@ -18,6 +18,46 @@ const images = {
 };
 
 type Dish = { id: string; category: string; name: string; description: string; price: string; image: string; detail: string; tag?: string };
+type ManagedDish = Dish & { available: boolean };
+
+// These dishes were supplied as the current Vegetarian menu.  Keep this
+// canonical copy when an older saved menu is loaded, while retaining the
+// availability setting managed in the admin area.
+const currentVegetarianDishIds = new Set([
+  'yetsome-beyaynetu',
+  'yetsome-special',
+  'yetsome-50-50',
+  'yetsome-firfir',
+  'yetsome-dulet',
+  'pasta-beatkilt',
+  'pasta-besgo',
+  'vegetable-anababero',
+]);
+
+function mergeSavedMenu(items: ManagedDish[]): ManagedDish[] {
+  const savedById = new Map(items.map((item) => [item.id, item]));
+  const catalogueIds = new Set(menuDishes.map((item) => item.id));
+
+  const catalogue = menuDishes.map((item) => {
+    const saved = savedById.get(item.id);
+    if (!saved) return { ...item, available: true };
+    if (currentVegetarianDishIds.has(item.id)) return { ...item, available: saved.available };
+    return saved;
+  });
+
+  // Preserve administrator-created dishes while adding any new catalogue
+  // dishes that did not exist in an older saved menu.
+  return [...catalogue, ...items.filter((item) => !catalogueIds.has(item.id))];
+}
+
+const formatPrice = (price: string) => price
+  .split('/')
+  .map((part) => {
+    const value = part.trim();
+    return value.startsWith('£') ? value : '£' + value;
+  })
+  .join(' / ');
+
 const legacyDishes: Dish[] = [
   { id: 'sambusa', category: 'to start', name: "Sambusa", description: "Crisp pastry, lentils, onion, green chilli", price: '6.5', image: images.injera, detail: "A hot, crisp parcel filled with spiced lentils, onion and green chilli. Built for passing around the table.", tag: 'crisp / bright' },
   { id: 'shiro', category: 'vegetarian', name: "Shiro", description: "Silky chickpea stew, berbere, garlic, injera", price: '14', image: images.spice, detail: "A smooth, deeply savoury chickpea stew with berbere, garlic and the kind of warmth that asks for another tear of injera.", tag: 'vegan' },
@@ -367,7 +407,23 @@ function IntroStory() {
 
 function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categories: string[]; onDish: (dish: Dish) => void }) {
   const [active, setActive] = useState('starters');
-  const visible = useMemo(() => active === 'the full menu' ? dishes : dishes.filter((dish) => dish.category === active), [active]);
+  const visible = useMemo(() => active === 'the full menu' ? dishes : dishes.filter((dish) => dish.category === active), [active, dishes]);
+  const availableCategories = useMemo(
+    () => reconcileMenuCategories(categories, dishes.map((dish) => dish.category)),
+    [categories, dishes],
+  );
+
+  // Category data can arrive after the menu. Never leave the customer on a
+  // tab that no longer exists (which previously looked like an empty menu).
+  useEffect(() => {
+    if (availableCategories.includes(active)) return;
+    setActive(availableCategories[0] ?? 'the full menu');
+  }, [active, availableCategories]);
+
+  const selectCategory = (category: string, button: HTMLButtonElement) => {
+    setActive(category);
+    button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  };
   return (
     <section id="menu" className="dark-panel relative overflow-hidden px-5 py-20 md:px-10 md:py-32">
       <motion.div
@@ -400,13 +456,15 @@ function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categorie
             <p className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/48 md:hidden">
               Swipe sideways for more categories <ArrowRight size={13} aria-hidden="true" />
             </p>
-            <div className="flex gap-2 overflow-x-auto border-b border-[#f4f2e9]/20 pb-px scrollbar-hide">
-            {categories.map((category) => (
+            <div className="flex gap-2 overflow-x-auto border-b border-[#f4f2e9]/20 pb-px scrollbar-hide" role="tablist" aria-label="Menu categories">
+            {availableCategories.map((category) => (
               <motion.button
                 type="button"
                 key={category}
-                onClick={() => setActive(category)}
+                onClick={(event) => selectCategory(category, event.currentTarget)}
                 data-testid={`button-category-${category.replaceAll(' ', '-')}`}
+                role="tab"
+                aria-selected={active === category}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 className={`shrink-0 px-3 pb-4 text-[10px] font-bold uppercase tracking-[.15em] transition-colors ${active === category ? 'border-b-3 border-[#f3cf22] text-[#f3cf22]' : 'text-[#f4f2e9]/48 hover:text-[#f4f2e9]'}`}
@@ -418,7 +476,7 @@ function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categorie
           </div>
         </Reveal>
         <div className="divide-y divide-[#f4f2e9]/15">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="sync">
             {visible.map((dish, i) => (
               <motion.button
                 type="button"
@@ -432,9 +490,9 @@ function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categorie
                 whileHover={{ backgroundColor: 'rgba(244,242,233,0.04)' }}
                 className="group grid w-full gap-3 py-4 text-left md:grid-cols-[72px_1.15fr_1fr_auto] md:items-center md:gap-5 md:py-6"
               >
-                <span className="eyebrow text-[#f3cf22]">0{i + 1}</span>
+                <span className="eyebrow text-[#f3cf22]">{String(i + 1).padStart(2, '0')}</span>
                 <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden bg-[#84373d] md:hidden">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden bg-[#84373d] md:h-20 md:w-20">
                     <img src={dish.image} alt="" className="image-fade h-full w-full object-cover" />
                   </div>
                   <div>
@@ -444,7 +502,7 @@ function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categorie
                 </div>
                 <p className="hidden text-sm leading-6 text-[#f4f2e9]/55 md:block">{dish.description}</p>
                 <span className="flex items-center gap-3 pl-[92px] font-mono text-sm font-semibold text-[#f3cf22] md:pl-0">
-                  £{dish.price} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                  {formatPrice(dish.price)} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                 </span>
               </motion.button>
             ))}
@@ -507,7 +565,7 @@ function DishModal({ dish, onClose }: { dish: Dish | null; onClose: () => void }
               <h2 className="display mt-4 text-5xl leading-[.85]">{dish.name}</h2>
               <p className="mt-6 text-sm leading-7 text-[#242522]/72">{dish.detail}</p>
               <div className="mt-8 flex items-center justify-between border-t border-[#242522]/20 pt-5">
-                <span className="font-mono text-sm font-semibold text-[#84373d]">£{dish.price}</span>
+                <span className="font-mono text-sm font-semibold text-[#84373d]">{formatPrice(dish.price)}</span>
                 <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#242522]/55">Tap outside to close</span>
               </div>
             </div>
@@ -907,6 +965,7 @@ function LocationFooter() {
             <span>© 2025 Enate</span>
             <span>Addis / Asmara / Soho</span>
             <span>Powered by 4kilo Dev</span>
+            <a href="/photo-credits" className="hover:text-[#f3cf22]">Photo credits</a>
             <a href="#top" data-testid="link-footer-top" className="hover:text-[#f3cf22]">Back to the beginning ↑</a>
           </div>
         </Reveal>
@@ -994,19 +1053,27 @@ function Home() {
   }, [galleryIndex]);
   useEffect(() => { document.title = 'Enate \u2014 Ethiopian & Eritrean Restaurant'; const description = document.querySelector('meta[name="description"]') ?? document.createElement('meta'); description.setAttribute('name', 'description'); description.setAttribute('content', 'Enate is an Ethiopian and Eritrean restaurant in London. Berbere, injera, buna and generous tables.'); document.head.appendChild(description); }, []);
   useEffect(() => {
-    const updateMenu = () => {
+    const applyMenu = (items: ManagedDish[]) =>
+      setDishes(mergeSavedMenu(items).filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
+    const applyStored = () => {
       const stored = readStoredMenu();
-      if (stored) setDishes(stored.filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
+      if (stored) applyMenu(stored);
     };
     fetch('/api/menu')
-      .then((response) => response.json() as Promise<{ items?: (Dish & { available: boolean })[] | null }>)
-      .then((result) => {
-        if (result.items) setDishes(result.items.filter((item) => item.available).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item));
-        else updateMenu();
+      .then((response) => {
+        if (!response.ok) throw new Error(`API error ${response.status}`);
+        return response.json() as Promise<{ items?: ManagedDish[] | null }>;
       })
-      .catch(updateMenu);
-    window.addEventListener('storage', updateMenu);
-    return () => window.removeEventListener('storage', updateMenu);
+      .then((result) => {
+        if (result.items) applyMenu(result.items);
+        else applyStored();
+      })
+      .catch(() => {
+        // API unreachable — fall back to localStorage admin edits
+        applyStored();
+      });
+    window.addEventListener('storage', applyStored);
+    return () => window.removeEventListener('storage', applyStored);
   }, []);
   useEffect(() => {
     fetch('/api/menu-availability')
@@ -1020,18 +1087,21 @@ function Home() {
   useEffect(() => {
     const updateCategories = () => {
       const stored = readStoredCategories();
-      if (stored) setCategories(menuTabs(stored));
+      setCategories(reconcileMenuCategories(stored || menuCategories, dishes.map((item) => item.category)));
     };
     fetch('/api/categories')
       .then((response) => response.json() as Promise<{ categories?: string[] }>)
       .then((result) => {
-        if (result.categories) setCategories(menuTabs(result.categories));
+        if (result.categories) setCategories(reconcileMenuCategories(result.categories, dishes.map((item) => item.category)));
         else updateCategories();
       })
       .catch(updateCategories);
     window.addEventListener('storage', updateCategories);
     return () => window.removeEventListener('storage', updateCategories);
   }, []);
+  useEffect(() => {
+    setCategories((current) => reconcileMenuCategories(current, dishes.map((item) => item.category)));
+  }, [dishes]);
   return (
     <main className="site-shell grain min-h-[100dvh]">
       <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
