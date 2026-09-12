@@ -1,4 +1,4 @@
-import type { MenuDish } from '@/lib/menu';
+import { menuDishes, type MenuDish } from '@/lib/menu';
 
 export const MENU_STORAGE_KEY = 'enat-admin-menu-v2';
 
@@ -31,4 +31,19 @@ export function readStoredMenu(): StoredMenuItem[] | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Saved menus can predate dishes added to the catalogue. Merge them by id so
+ * admins keep their edits while every current catalogue dish remains editable.
+ */
+export function mergeStoredMenuWithCatalog(items: StoredMenuItem[] | null): StoredMenuItem[] {
+  const savedItems = items || [];
+  const savedById = new Map(savedItems.map((item) => [item.id, item]));
+  const catalogueIds = new Set(menuDishes.map((item) => item.id));
+
+  return [
+    ...menuDishes.map((item) => savedById.get(item.id) || { ...item, available: true }),
+    ...savedItems.filter((item) => !catalogueIds.has(item.id)),
+  ];
 }

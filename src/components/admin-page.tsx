@@ -4,7 +4,7 @@ import { useState, useEffect, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
 import { menuCategories, menuDishes } from '@/lib/menu';
-import { MENU_STORAGE_KEY, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
+import { MENU_STORAGE_KEY, mergeStoredMenuWithCatalog, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
 import type { Reservation } from '@/lib/reservations';
 import { CATEGORY_STORAGE_KEY, defaultMenuCategories, readStoredCategories } from '@/lib/category-storage';
 
@@ -20,10 +20,7 @@ const CATEGORIES = defaultMenuCategories;
 
 function getStoredMenu(): MenuItem[] {
   const stored = readStoredMenu();
-  if (stored) {
-    return stored.map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item);
-  }
-  return menuDishes.map((item) => ({ ...item, available: true }));
+  return mergeStoredMenuWithCatalog(stored).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item);
 
   /* Legacy mock data retained below only for reference. */
     return [
@@ -191,7 +188,7 @@ function AdminDashboard() {
   useEffect(() => {
     fetch('/api/menu')
       .then((response) => response.json() as Promise<{ items?: MenuItem[] | null }>)
-      .then((result) => { if (result.items) setMenuItems(result.items); })
+      .then((result) => { if (result.items) setMenuItems(mergeStoredMenuWithCatalog(result.items)); })
       .catch(() => undefined);
   }, []);
 
