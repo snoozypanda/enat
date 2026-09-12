@@ -1042,6 +1042,7 @@ function Home() {
   const [dishes, setDishes] = useState<Dish[]>(menuDishes);
   const [categories, setCategories] = useState(menuCategories);
   const [hiddenDishIds, setHiddenDishIds] = useState<Set<string>>(() => new Set());
+  const [deletedDishIds, setDeletedDishIds] = useState<Set<string>>(() => new Set());
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const goToReserve = () => document.getElementById('reserve')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   const stepGallery = (dir: number) => setGalleryIndex((current) => current === null ? null : (current + dir + gallery.length) % gallery.length);
@@ -1085,6 +1086,14 @@ function Home() {
       .catch(() => undefined);
   }, []);
   useEffect(() => {
+    fetch('/api/menu-deletions')
+      .then((response) => response.json() as Promise<{ itemIds?: string[] }>)
+      .then((result) => {
+        if (result.itemIds) setDeletedDishIds(new Set(result.itemIds));
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
     const updateCategories = () => {
       const stored = readStoredCategories();
       setCategories(reconcileMenuCategories(stored || menuCategories, dishes.map((item) => item.category)));
@@ -1107,7 +1116,7 @@ function Home() {
       <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <IntroStory />
-      <MenuSection dishes={dishes.filter((dish) => !hiddenDishIds.has(dish.id))} categories={categories} onDish={setDish} />
+      <MenuSection dishes={dishes.filter((dish) => !hiddenDishIds.has(dish.id) && !deletedDishIds.has(dish.id))} categories={categories} onDish={setDish} />
       <SpecialSection />
       <GallerySection onOpen={setGalleryIndex} />
       <Reviews />

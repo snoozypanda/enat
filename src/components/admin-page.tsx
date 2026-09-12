@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ChangeEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
 import { menuCategories, menuDishes } from '@/lib/menu';
@@ -151,6 +151,7 @@ function AdminDashboard() {
   const [availabilitySavingId, setAvailabilitySavingId] = useState<string | null>(null);
   const [availabilityError, setAvailabilityError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const deletedItemIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!successMessage) return;
@@ -197,7 +198,21 @@ function AdminDashboard() {
   useEffect(() => {
     fetch('/api/menu')
       .then((response) => response.json() as Promise<{ items?: MenuItem[] | null }>)
-      .then((result) => { if (result.items) setMenuItems(mergeStoredMenuWithCatalog(result.items)); })
+      .then((result) => {
+        if (result.items) setMenuItems(mergeStoredMenuWithCatalog(result.items).filter((item) => !deletedItemIdsRef.current.has(item.id)));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/menu-deletions')
+      .then((response) => response.json() as Promise<{ itemIds?: string[] }>)
+      .then((result) => {
+        if (!result.itemIds) return;
+        const deleted = new Set(result.itemIds);
+        deletedItemIdsRef.current = deleted;
+        setMenuItems((current) => current.filter((item) => !deleted.has(item.id)));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -231,9 +246,17 @@ function AdminDashboard() {
 
   const deleteItem = async (id: string) => {
     const item = menuItems.find((entry) => entry.id === id);
-    if (await persistMenu(menuItems.filter((entry) => entry.id !== id))) {
+    setAvailabilityError('');
+    try {
+      const response = await fetch('/api/menu-deletions', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: id }) });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not delete the menu item.');
+      deletedItemIdsRef.current.add(id);
+      setMenuItems((current) => current.filter((entry) => entry.id !== id));
       setDeleteConfirm(null);
       setSuccessMessage(`${item?.name || 'Menu item'} was removed from the menu.`);
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not delete the menu item.');
     }
   };
 
