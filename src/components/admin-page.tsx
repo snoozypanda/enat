@@ -158,13 +158,22 @@ function AdminDashboard() {
     return () => window.clearTimeout(timeout);
   }, [successMessage]);
 
-  // Persist to localStorage
+  // Local storage is only a convenience cache. Mobile Safari can reject large
+  // writes (especially after photo uploads), so it must never take down admin.
   useEffect(() => {
-    localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menuItems));
+    try {
+      localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menuItems));
+    } catch {
+      setAvailabilityError('This browser could not update its local cache. Your saved menu is still kept securely on the server.');
+    }
   }, [menuItems]);
 
   useEffect(() => {
-    localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+    try {
+      localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+    } catch {
+      // Categories are also loaded from the server; a local cache miss is safe.
+    }
   }, [categories]);
 
   useEffect(() => {
