@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://ember-and-stone-ten.vercel.app/sitemap.xml
+Sitemap: https://enate.et/sitemap.xml

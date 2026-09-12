@@ -18,6 +18,20 @@ type AdminView = 'dashboard' | 'menu' | 'categories' | 'reservations';
 
 const CATEGORIES = defaultMenuCategories;
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, [query]);
+
+  return matches;
+}
+
 function getStoredMenu(): MenuItem[] {
   const stored = readStoredMenu();
   return mergeStoredMenuWithCatalog(stored).map((item) => item.id === 'samosa' ? { ...item, name: 'Sambusa' } : item);
@@ -152,6 +166,7 @@ function AdminDashboard() {
   const [availabilityError, setAvailabilityError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const deletedItemIdsRef = useRef<Set<string>>(new Set());
+  const [deletedItems, setDeletedItems] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     if (!successMessage) return;
@@ -185,35 +200,31 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/menu-availability')
-      .then((response) => response.json() as Promise<{ availability?: Record<string, boolean> }>)
-      .then((result) => {
-        const availability = result.availability;
-        if (!availability) return;
-        setMenuItems((current) => current.map((item) => item.id in availability ? { ...item, available: availability[item.id] } : item));
-      })
-      .catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/menu')
-      .then((response) => response.json() as Promise<{ items?: MenuItem[] | null }>)
-      .then((result) => {
-        if (result.items) setMenuItems(mergeStoredMenuWithCatalog(result.items).filter((item) => !deletedItemIdsRef.current.has(item.id)));
-      })
-      .catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/menu-deletions')
-      .then((response) => response.json() as Promise<{ itemIds?: string[] }>)
-      .then((result) => {
-        if (!result.itemIds) return;
-        const deleted = new Set(result.itemIds);
+    const loadMenu = async () => {
+      try {
+        const [menuResponse, availabilityResponse, deletionsResponse] = await Promise.all([
+          fetch('/api/menu'),
+          fetch('/api/menu-availability'),
+          fetch('/api/menu-deletions'),
+        ]);
+        const [menuResult, availabilityResult, deletionsResult] = await Promise.all([
+          menuResponse.json() as Promise<{ items?: MenuItem[] | null }>,
+          availabilityResponse.json() as Promise<{ availability?: Record<string, boolean> }>,
+          deletionsResponse.json() as Promise<{ itemIds?: string[] }>,
+        ]);
+        const deleted = new Set(deletionsResult.itemIds || []);
         deletedItemIdsRef.current = deleted;
-        setMenuItems((current) => current.filter((item) => !deleted.has(item.id)));
-      })
-      .catch(() => undefined);
+        const source = menuResult.items ? mergeStoredMenuWithCatalog(menuResult.items) : getStoredMenu();
+        const withAvailability = source.map((item) => availabilityResult.availability && item.id in availabilityResult.availability
+          ? { ...item, available: availabilityResult.availability[item.id] }
+          : item);
+        setDeletedItems(withAvailability.filter((item) => deleted.has(item.id)));
+        setMenuItems(withAvailability.filter((item) => !deleted.has(item.id)));
+      } catch {
+        // The local cache remains usable if the server is temporarily offline.
+      }
+    };
+    void loadMenu();
   }, []);
 
   useEffect(() => {
@@ -253,10 +264,26 @@ function AdminDashboard() {
       if (!response.ok) throw new Error(result.error || 'Could not delete the menu item.');
       deletedItemIdsRef.current.add(id);
       setMenuItems((current) => current.filter((entry) => entry.id !== id));
+      if (item) setDeletedItems((current) => [...current, item]);
       setDeleteConfirm(null);
       setSuccessMessage(`${item?.name || 'Menu item'} was removed from the menu.`);
     } catch (error) {
       setAvailabilityError(error instanceof Error ? error.message : 'Could not delete the menu item.');
+    }
+  };
+
+  const restoreItem = async (item: MenuItem) => {
+    setAvailabilityError('');
+    try {
+      const response = await fetch('/api/menu-deletions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: item.id }) });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not restore the menu item.');
+      deletedItemIdsRef.current.delete(item.id);
+      setDeletedItems((current) => current.filter((entry) => entry.id !== item.id));
+      setMenuItems((current) => [...current, item]);
+      setSuccessMessage(`${item.name} was restored to the menu.`);
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not restore the menu item.');
     }
   };
 
@@ -431,6 +458,8 @@ function AdminDashboard() {
                   onToggle={toggleAvailability}
                   savingAvailabilityId={availabilitySavingId}
                   availabilityError={availabilityError}
+                  deletedItems={deletedItems}
+                  onRestore={restoreItem}
                 />
               </motion.div>
             )}
@@ -592,7 +621,7 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
 
 /* ─── Menu Items View ─── */
 
-function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAvailabilityId, availabilityError }: {
+function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAvailabilityId, availabilityError, deletedItems, onRestore }: {
   items: MenuItem[];
   categories: string[];
   onEdit: (item: MenuItem) => void;
@@ -600,14 +629,25 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
   onToggle: (id: string) => void | Promise<void>;
   savingAvailabilityId: string | null;
   availabilityError: string;
+  deletedItems: MenuItem[];
+  onRestore: (item: MenuItem) => void;
 }) {
   const [filter, setFilter] = useState('all');
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const filtered = filter === 'all' ? items : items.filter((item) => item.category === filter);
   const allCategories = ['all', ...categories];
 
   return (
     <div>
       {availabilityError && <p role="alert" className="mb-4 text-sm text-[#f3cf22]">{availabilityError}</p>}
+      {deletedItems.length > 0 && (
+        <section className="mb-5 rounded-lg border border-[#f3cf22]/30 bg-[#f3cf22]/10 p-4">
+          <div className="flex items-center justify-between gap-4"><div><h2 className="text-sm font-bold">Recently deleted</h2><p className="mt-1 text-xs text-[#f4f2e9]/60">Restore an item if it was removed by mistake.</p></div><span className="rounded-full bg-[#f3cf22]/20 px-2 py-1 text-xs font-bold text-[#f3cf22]">{deletedItems.length}</span></div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {deletedItems.map((item) => <button key={item.id} type="button" onClick={() => onRestore(item)} className="rounded-md border border-[#f4f2e9]/20 px-3 py-2 text-xs font-bold text-[#f4f2e9] transition-colors hover:border-[#f3cf22] hover:text-[#f3cf22]">Restore {item.name}</button>)}
+          </div>
+        </section>
+      )}
       {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
         {allCategories.map((cat) => (
@@ -623,8 +663,8 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
         ))}
       </div>
 
-      {/* Mobile item cards */}
-      <div className="space-y-3 md:hidden">
+      {!isDesktop ? (
+      <div className="space-y-3">
         <AnimatePresence>
           {filtered.map((item, i) => (
             <motion.article
@@ -661,9 +701,9 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
         </AnimatePresence>
         {filtered.length === 0 && <div className="rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/40">No items in this category.</div>}
       </div>
+      ) : (
 
-      {/* Desktop items table */}
-      <div className="hidden overflow-x-auto rounded-lg border border-[#f4f2e9]/10 bg-[#242522] md:block">
+      <div className="overflow-x-auto rounded-lg border border-[#f4f2e9]/10 bg-[#242522]">
         <table className="min-w-[600px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-[#f4f2e9]/10 text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/40">
@@ -726,6 +766,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
           <div className="p-10 text-center text-sm text-[#f4f2e9]/40">No items in this category.</div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -920,7 +961,7 @@ function ReservationsView() {
 
 async function createMenuThumbnail(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) throw new Error('Choose an image file.');
-  if (file.size > 10 * 1024 * 1024) throw new Error('Choose an image smaller than 10 MB.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Choose an image smaller than 5 MB.');
 
   const sourceUrl = URL.createObjectURL(file);
   const source = new Image();
@@ -931,6 +972,10 @@ async function createMenuThumbnail(file: File): Promise<string> {
       source.onerror = () => reject(new Error('That image could not be read.'));
       source.src = sourceUrl;
     });
+
+    if (source.naturalWidth * source.naturalHeight > 24_000_000) {
+      throw new Error('Choose an image smaller than 24 megapixels.');
+    }
 
     const maxSide = 900;
     const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
@@ -1042,7 +1087,7 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Upload dish photo</label>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="mt-1 block w-full text-xs text-[#f4f2e9]/60 file:mr-3 file:rounded-md file:border-0 file:bg-[#f3cf22] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#242522]" />
-              <p className="mt-1 text-[10px] leading-4 text-[#f4f2e9]/40">Use the photo of this exact dish. It is resized for a consistent menu thumbnail.</p>
+              <p className="mt-1 text-[10px] leading-4 text-[#f4f2e9]/40">Use the photo of this exact dish. Images up to 5 MB and 24 megapixels are resized for a consistent menu thumbnail.</p>
             </div>
           </div>
 

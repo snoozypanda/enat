@@ -27,3 +27,8 @@ export async function deleteMenuItem(itemId: string): Promise<void> {
   const sql = await ensureDeletedMenuItemsTable();
   await sql`INSERT INTO deleted_menu_items (item_id) VALUES (${itemId}) ON CONFLICT (item_id) DO NOTHING`;
 }
+
+export async function restoreMenuItem(itemId: string): Promise<void> {
+  const sql = await ensureDeletedMenuItemsTable();
+  await sql`DELETE FROM deleted_menu_items WHERE item_id = ${itemId}`;
+}

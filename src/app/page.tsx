@@ -1,6 +1,6 @@
 import App from '@/App';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ember-and-stone-ten.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://enate.et';
 
 const restaurantSchema = {
   '@context': 'https://schema.org',

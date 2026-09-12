@@ -4,7 +4,7 @@ import { defaultMenuCategories } from '@/lib/category-storage';
 type CategoryRow = { name: string };
 
 function getDatabase() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!databaseUrl) throw new Error('Category storage is not configured.');
   return neon(databaseUrl);
 }

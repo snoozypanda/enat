@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_SESSION_COOKIE, isAdminSession } from '@/lib/admin-auth';
-import { deleteMenuItem, listDeletedMenuItemIds } from '@/lib/menu-deletion-db';
+import { deleteMenuItem, listDeletedMenuItemIds, restoreMenuItem } from '@/lib/menu-deletion-db';
 
 export const runtime = 'nodejs';
 
@@ -30,5 +30,25 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Unable to delete menu item', error);
     return NextResponse.json({ error: 'Could not delete the menu item.' }, { status: 503 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!isAdminSession(request.cookies.get(ADMIN_SESSION_COOKIE)?.value)) {
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  }
+
+  const body: unknown = await request.json().catch(() => null);
+  const itemId = typeof body === 'object' && body !== null ? (body as Record<string, unknown>).itemId : null;
+  if (typeof itemId !== 'string' || !/^[a-z0-9-]{1,100}$/i.test(itemId)) {
+    return NextResponse.json({ error: 'Invalid menu item.' }, { status: 400 });
+  }
+
+  try {
+    await restoreMenuItem(itemId);
+    return NextResponse.json({ restored: true, itemId });
+  } catch (error) {
+    console.error('Unable to restore menu item', error);
+    return NextResponse.json({ error: 'Could not restore the menu item.' }, { status: 503 });
   }
 }

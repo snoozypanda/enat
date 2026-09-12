@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Providers } from '@/components/providers';
 import '../index.css';
 
-const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ember-and-stone-ten.vercel.app');
+const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://enate.et');
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
