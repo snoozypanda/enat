@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
-import { menuCategories, menuDishes } from '@/lib/menu';
+import { formatMenuPrice, menuCategories, menuDishes, normalizeMenuPrice } from '@/lib/menu';
 import { MENU_STORAGE_KEY, mergeStoredMenuWithCatalog, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
 import type { Reservation } from '@/lib/reservations';
 import { CATEGORY_STORAGE_KEY, defaultMenuCategories, readStoredCategories } from '@/lib/category-storage';
@@ -231,27 +231,28 @@ function AdminDashboard() {
     document.title = 'Enat Admin — Dashboard';
   }, []);
 
-  const persistMenu = async (nextMenu: MenuItem[]) => {
+  const saveItem = async (item: MenuItem): Promise<boolean> => {
+    const normalizedItem = { ...item, price: normalizeMenuPrice(item.price) };
+    const exists = menuItems.some((entry) => entry.id === normalizedItem.id);
     setAvailabilityError('');
     try {
-      const response = await fetch('/api/menu', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: nextMenu }) });
-      const result: { error?: string } = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Could not save the menu.');
-      setMenuItems(nextMenu);
-      return true;
-    } catch (error) {
-      setAvailabilityError(error instanceof Error ? error.message : 'Could not save the menu.');
-      return false;
-    }
-  };
-
-  const saveItem = async (item: MenuItem) => {
-    const exists = menuItems.some((entry) => entry.id === item.id);
-    const nextMenu = exists ? menuItems.map((entry) => entry.id === item.id ? item : entry) : [...menuItems, item];
-    if (await persistMenu(nextMenu)) {
+      const response = await fetch('/api/menu', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: normalizedItem }),
+      });
+      const result: { error?: string } = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not save the menu item.');
+      setMenuItems((current) => exists
+        ? current.map((entry) => entry.id === normalizedItem.id ? normalizedItem : entry)
+        : [...current, normalizedItem]);
       setEditItem(null);
       setShowForm(false);
-      setSuccessMessage(exists ? `Menu updated — ${item.name} is now live.` : `Menu item added — ${item.name} is now live.`);
+      setSuccessMessage(exists ? `Menu updated — ${normalizedItem.name} is now live.` : `Menu item added — ${normalizedItem.name} is now live.`);
+      return true;
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not save the menu item.');
+      return false;
     }
   };
 
@@ -607,7 +608,7 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
                 <span className="text-sm font-medium">{item.name}</span>
                 <span className="ml-2 text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">{item.category}</span>
               </div>
-              <span className="font-mono text-sm text-[#f3cf22]">£{item.price}</span>
+              <span className="font-mono text-sm text-[#f3cf22]">{formatMenuPrice(item.price)}</span>
               <span className={`inline-flex min-w-[78px] justify-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${item.available ? 'bg-[#25D366]/15 text-[#25D366]' : 'bg-[#84373d]/15 text-[#84373d]'}`}>
                 {item.available ? 'Available' : 'Hidden'}
               </span>
@@ -683,7 +684,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
                   <h3 className="truncate text-base font-bold">{item.name}</h3>
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/45">{item.category}{item.tag ? ` · ${item.tag}` : ''}</p>
                 </div>
-                <span className="shrink-0 font-mono text-lg text-[#f3cf22]">£{item.price}</span>
+                <span className="shrink-0 font-mono text-lg text-[#f3cf22]">{formatMenuPrice(item.price)}</span>
               </div>
               <div className="mt-3 flex items-center gap-2 border-t border-[#f4f2e9]/10 pt-3">
                 <button type="button" disabled={savingAvailabilityId === item.id} onClick={() => void onToggle(item.id)} className={`min-w-0 flex-1 rounded-md px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-60 ${item.available ? 'bg-[#25D366]/15 text-[#25D366]' : 'bg-[#84373d]/15 text-[#84373d]'}`}>
@@ -738,7 +739,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
                     </div>
                   </td>
                   <td className="hidden px-4 py-3 capitalize text-[#f4f2e9]/60 md:table-cell">{item.category}</td>
-                  <td className="px-4 py-3 font-mono text-[#f3cf22]">£{item.price}</td>
+                  <td className="px-4 py-3 font-mono text-[#f3cf22]">{formatMenuPrice(item.price)}</td>
                   <td className="hidden px-4 py-3 sm:table-cell">
                     <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">{item.tag}</span>
                   </td>
@@ -819,7 +820,7 @@ function CategoriesView({ items, categories, onAdd }: { items: MenuItem[]; categ
                 {catItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between text-xs text-[#f4f2e9]/60">
                     <span>{item.name}</span>
-                    <span className="font-mono text-[#f3cf22]">£{item.price}</span>
+                    <span className="font-mono text-[#f3cf22]">{formatMenuPrice(item.price)}</span>
                   </div>
                 ))}
               </div>
@@ -991,7 +992,7 @@ async function createMenuThumbnail(file: File): Promise<string> {
   }
 }
 
-function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | null; categories: string[]; onSave: (item: MenuItem) => void; onClose: () => void }) {
+function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | null; categories: string[]; onSave: (item: MenuItem) => Promise<boolean>; onClose: () => void }) {
   const isEdit = !!item;
   const [form, setForm] = useState<MenuItem>(item || {
     id: `item-${Date.now()}`,
@@ -1005,12 +1006,21 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
     available: true,
   });
   const [imageError, setImageError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const update = (key: keyof MenuItem, value: string | boolean) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    if (isSaving) return;
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      if (!await onSave(form)) setSaveError('Could not save this item. Check your connection and try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1064,8 +1074,8 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Price (£)</label>
-              <input required value={form.price} onChange={(e) => update('price', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" placeholder="12.50" />
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#f4f2e9]/50">Price (£) — slash prices allowed</label>
+              <input required value={form.price} onChange={(e) => update('price', e.target.value)} className="mt-1 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2 text-sm text-[#f4f2e9] outline-none focus:border-[#f3cf22]" placeholder="12.50 or 16/18" />
             </div>
           </div>
 
@@ -1092,6 +1102,7 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
           </div>
 
           {imageError && <p role="alert" className="text-xs text-[#f3cf22]">{imageError}</p>}
+          {saveError && <p role="alert" className="text-xs text-[#f3cf22]">{saveError}</p>}
 
           {form.image && (
             <div className="flex items-center gap-3 rounded-md border border-[#f4f2e9]/10 bg-[#1a1b19] p-3">
@@ -1118,15 +1129,16 @@ function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | 
             </div>
 
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={onClose} className="rounded-md border border-[#f4f2e9]/20 px-4 py-2 text-sm text-[#f4f2e9]/70 hover:bg-[#f4f2e9]/5">Cancel</button>
+              <button type="button" disabled={isSaving} onClick={onClose} className="rounded-md border border-[#f4f2e9]/20 px-4 py-2 text-sm text-[#f4f2e9]/70 hover:bg-[#f4f2e9]/5 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
               <motion.button
                 type="submit"
+                disabled={isSaving}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522]"
+                className="flex items-center gap-2 rounded-md bg-[#f3cf22] px-4 py-2 text-sm font-bold text-[#242522] disabled:cursor-wait disabled:opacity-70"
               >
                 <Save size={15} />
-                {isEdit ? 'Update' : 'Create'} Item
+                {isSaving ? 'Saving…' : `${isEdit ? 'Update' : 'Create'} Item`}
               </motion.button>
             </div>
           </div>

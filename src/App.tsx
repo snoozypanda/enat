@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from 'motion/react';
 import { ArrowDown, ArrowLeft, ArrowRight, CalendarDays, Clock3, Coffee, Flame, MapPin, Menu, MessageCircle, Music2, Plus, Quote, Star, Utensils, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { menuCategories, menuDishes } from '@/lib/menu';
+import { formatMenuPrice, menuCategories, menuDishes } from '@/lib/menu';
 import { readStoredMenu } from '@/lib/menu-storage';
 import { partySizes, type PartySize } from '@/lib/reservations';
 import { readStoredCategories, reconcileMenuCategories } from '@/lib/category-storage';
@@ -20,20 +20,6 @@ const images = {
 type Dish = { id: string; category: string; name: string; description: string; price: string; image: string; detail: string; tag?: string };
 type ManagedDish = Dish & { available: boolean };
 
-// These dishes were supplied as the current Vegetarian menu.  Keep this
-// canonical copy when an older saved menu is loaded, while retaining the
-// availability setting managed in the admin area.
-const currentVegetarianDishIds = new Set([
-  'yetsome-beyaynetu',
-  'yetsome-special',
-  'yetsome-50-50',
-  'yetsome-firfir',
-  'yetsome-dulet',
-  'pasta-beatkilt',
-  'pasta-besgo',
-  'vegetable-anababero',
-]);
-
 function mergeSavedMenu(items: ManagedDish[]): ManagedDish[] {
   const savedById = new Map(items.map((item) => [item.id, item]));
   const catalogueIds = new Set(menuDishes.map((item) => item.id));
@@ -41,7 +27,6 @@ function mergeSavedMenu(items: ManagedDish[]): ManagedDish[] {
   const catalogue = menuDishes.map((item) => {
     const saved = savedById.get(item.id);
     if (!saved) return { ...item, available: true };
-    if (currentVegetarianDishIds.has(item.id)) return { ...item, available: saved.available };
     return saved;
   });
 
@@ -49,14 +34,6 @@ function mergeSavedMenu(items: ManagedDish[]): ManagedDish[] {
   // dishes that did not exist in an older saved menu.
   return [...catalogue, ...items.filter((item) => !catalogueIds.has(item.id))];
 }
-
-const formatPrice = (price: string) => price
-  .split('/')
-  .map((part) => {
-    const value = part.trim();
-    return value.startsWith('£') ? value : '£' + value;
-  })
-  .join(' / ');
 
 const legacyDishes: Dish[] = [
   { id: 'sambusa', category: 'to start', name: "Sambusa", description: "Crisp pastry, lentils, onion, green chilli", price: '6.5', image: images.injera, detail: "A hot, crisp parcel filled with spiced lentils, onion and green chilli. Built for passing around the table.", tag: 'crisp / bright' },
@@ -502,7 +479,7 @@ function MenuSection({ dishes, categories, onDish }: { dishes: Dish[]; categorie
                 </div>
                 <p className="hidden text-sm leading-6 text-[#f4f2e9]/55 md:block">{dish.description}</p>
                 <span className="flex items-center gap-3 pl-[92px] font-mono text-sm font-semibold text-[#f3cf22] md:pl-0">
-                  {formatPrice(dish.price)} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                  {formatMenuPrice(dish.price)} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                 </span>
               </motion.button>
             ))}
@@ -565,7 +542,7 @@ function DishModal({ dish, onClose }: { dish: Dish | null; onClose: () => void }
               <h2 className="display mt-4 text-5xl leading-[.85]">{dish.name}</h2>
               <p className="mt-6 text-sm leading-7 text-[#242522]/72">{dish.detail}</p>
               <div className="mt-8 flex items-center justify-between border-t border-[#242522]/20 pt-5">
-                <span className="font-mono text-sm font-semibold text-[#84373d]">{formatPrice(dish.price)}</span>
+                <span className="font-mono text-sm font-semibold text-[#84373d]">{formatMenuPrice(dish.price)}</span>
                 <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#242522]/55">Tap outside to close</span>
               </div>
             </div>

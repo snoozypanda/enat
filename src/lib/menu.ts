@@ -120,11 +120,11 @@ export const menuDishes: MenuDish[] = [
   dish('spicy-fish-fillet', 'fish', 'Spicy Fish Fillet', 'Tender fish fillet in a bold spicy sauce, served with rice and vegetables.', '15', images.fish, 'fish'),
 
   // Enat special
-  dish('enat-yetaba-kintot', 'enat special', 'Enat Yet’aba Kintot', 'Kitfo / minced beef, Obama / special beef, Gored Gored, Derek Awaze / spicy grilled beef, Ayib / cottage cheese, Ayib Begomen / cottage cheese and greens, Gomen Be’Siga / greens and beef.', '55', images.specials, 'sharing'),
-  dish('enat-50-50', 'enat special', 'Enat 50/50', 'Half and half of two main dishes of your choice.', '16 / 18', images.specials, 'sharing'),
-  dish('half-kornis', 'enat special', 'Half Kornis', 'Quanta Firfir, Kitfo, Dulet, Lega Tibs and Gomen Be’Siga.', '40', images.specials, 'sharing'),
-  dish('kornis', 'enat special', 'Kornis', 'Quanta Firfir, Kitfo, Dulet, Lega Tibs and Gomen Be’Siga. For 2 or 3 people.', '75', images.specials, 'sharing'),
-  dish('enat-maheberawi-1', 'enat special', 'Enat Maheberawi I', 'Kitfo, Dulet, Awaze Tibs, Alicha and Gomen.', '50', images.specials, 'sharing'),
+  dish('enat-yetaba-kintot', 'enat special', "Enat Yet'aba Kintot", 'Kitfo / minced beef, Obama / special beef, Gored Gored, Derek Awaze / spicy grilled beef, Ayib / cottage cheese, Ayib Begomen / cottage cheese and greens, Gomen Be’Sega / greens and beef.', '55', images.specials, 'sharing'),
+  dish('enat-50-50', 'enat special', 'Enat 50/50', 'Half and half of two main dishes of your choice.', '16/18', images.specials, 'sharing'),
+  dish('half-kornis', 'enat special', 'Half Kornis', 'Quanta Firfir, Kitfo, Dulet, Lega Tibs and Gomen Be’Sega.', '40', images.specials, 'sharing'),
+  dish('kornis', 'enat special', 'Kornis', 'Quanta Firfir, Kitfo, Dulet, Lega Tibs and Gomen Be’Sega. For 2 or 3 people.', '75', images.specials, 'sharing'),
+  dish('enat-maheberawi-1', 'enat special', 'Enat Maheberawi I', 'Kitfo, Dulet, Awaze Tibs, Aliche and Gomen.', '50', images.specials, 'sharing'),
   dish('enat-maheberawi-2', 'enat special', 'Enat Maheberawi II', 'Kitfo, Obama, Dulet, Gomen Be’Sega and Derek Tibs.', '50', images.specials, 'sharing'),
   dish('enat-maheberawi-3', 'enat special', 'Enat Maheberawi III', 'Doro Wot, Ye’Beg Wot, Lega Tibs, Ayib, Gomen Be’Sega and Derek Tibs.', '50', images.specials, 'sharing'),
 
@@ -151,6 +151,42 @@ export const menuDishes: MenuDish[] = [
   dish('glass-of-tej', 'drinks', 'Glass of Tej', 'Traditional honey wine served by the glass.', '5', images.drinks, 'beer & wine'),
   dish('bottle-of-tej', 'drinks', 'Bottle of Tej', 'Traditional honey wine served by the bottle.', '22.00', images.drinks, 'beer & wine'),
 ];
+
+// These are the supplied, current menu entries. Keep their current copy when
+// an older admin save is loaded, while preserving each dish's availability.
+export const canonicalCatalogDishIds = new Set([
+  'yetsome-beyaynetu',
+  'yetsome-special',
+  'yetsome-50-50',
+  'yetsome-firfir',
+  'yetsome-dulet',
+  'pasta-beatkilt',
+  'pasta-besgo',
+  'vegetable-anababero',
+  'enat-yetaba-kintot',
+  'enat-50-50',
+  'half-kornis',
+  'kornis',
+  'enat-maheberawi-1',
+  'enat-maheberawi-2',
+  'enat-maheberawi-3',
+]);
+
+export function normalizeMenuPrice(price: string): string {
+  return price
+    .split('/')
+    .map((part) => part.trim().replace(/^£\s*/, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
+export function formatMenuPrice(price: string): string {
+  return normalizeMenuPrice(price)
+    .split('/')
+    .filter(Boolean)
+    .map((part) => `£${part}`)
+    .join(' / ');
+}
 
 export const menuCategories = [
   'starters',
