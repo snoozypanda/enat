@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Search, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
 import { formatMenuPrice, menuCategories, menuDishes, normalizeMenuPrice } from '@/lib/menu';
 import { MENU_STORAGE_KEY, mergeStoredMenuWithCatalog, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
 import type { Reservation } from '@/lib/reservations';
@@ -634,8 +634,16 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
   onRestore: (item: MenuItem) => void;
 }) {
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const filtered = filter === 'all' ? items : items.filter((item) => item.category === filter);
+  const searchTerm = search.trim().toLocaleLowerCase();
+  const filtered = items.filter((item) => {
+    const matchesCategory = filter === 'all' || item.category === filter;
+    if (!matchesCategory) return false;
+    if (!searchTerm) return true;
+    return [item.name, item.category, item.description, item.detail, item.price, item.tag]
+      .some((value) => value.toLocaleLowerCase().includes(searchTerm));
+  });
   const allCategories = ['all', ...categories];
 
   return (
@@ -649,6 +657,22 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
           </div>
         </section>
       )}
+      <div className="mb-4">
+        <label htmlFor="menu-item-search" className="sr-only">Search menu items</label>
+        <div className="flex items-center gap-2 rounded-md border border-[#f4f2e9]/15 bg-[#242522] px-3 focus-within:border-[#f3cf22]">
+          <Search size={17} aria-hidden="true" className="shrink-0 text-[#f3cf22]" />
+          <input
+            id="menu-item-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by food, category, description, or price…"
+            className="w-full bg-transparent py-3 text-sm text-[#f4f2e9] outline-none placeholder:text-[#f4f2e9]/35"
+          />
+          {search && <button type="button" onClick={() => setSearch('')} className="shrink-0 text-xs font-bold text-[#f4f2e9]/55 hover:text-[#f3cf22]">Clear</button>}
+        </div>
+        <p className="mt-2 text-xs text-[#f4f2e9]/45" aria-live="polite">{filtered.length} {filtered.length === 1 ? 'item' : 'items'} found</p>
+      </div>
       {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide">
         {allCategories.map((cat) => (
@@ -700,7 +724,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
             </motion.article>
           ))}
         </AnimatePresence>
-        {filtered.length === 0 && <div className="rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/40">No items in this category.</div>}
+        {filtered.length === 0 && <div className="rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/40">No menu items match this search.</div>}
       </div>
       ) : (
 
@@ -764,7 +788,7 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="p-10 text-center text-sm text-[#f4f2e9]/40">No items in this category.</div>
+          <div className="p-10 text-center text-sm text-[#f4f2e9]/40">No menu items match this search.</div>
         )}
       </div>
       )}
