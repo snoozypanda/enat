@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, ChefHat, Edit3, LayoutDashboard, List, Plus, Save, Search, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChefHat, Edit3, ImageDown, LayoutDashboard, List, Plus, Save, Search, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
 import { formatMenuPrice, menuCategories, menuDishes, normalizeMenuPrice } from '@/lib/menu';
 import { MENU_STORAGE_KEY, mergeStoredMenuWithCatalog, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
 import type { Reservation } from '@/lib/reservations';
@@ -167,6 +167,7 @@ function AdminDashboard() {
   const [successMessage, setSuccessMessage] = useState('');
   const deletedItemIdsRef = useRef<Set<string>>(new Set());
   const [deletedItems, setDeletedItems] = useState<MenuItem[]>([]);
+  const [isOptimizingPhotos, setIsOptimizingPhotos] = useState(false);
 
   useEffect(() => {
     if (!successMessage) return;
@@ -253,6 +254,31 @@ function AdminDashboard() {
     } catch (error) {
       setAvailabilityError(error instanceof Error ? error.message : 'Could not save the menu item.');
       return false;
+    }
+  };
+
+  const optimizeMenuPhotos = async (): Promise<void> => {
+    const oversizedPhotos = menuItems.filter((item) => item.image.startsWith('data:image/') && item.image.length > 220_000);
+    if (oversizedPhotos.length === 0) {
+      setSuccessMessage('Menu photos are already optimized.');
+      return;
+    }
+
+    setAvailabilityError('');
+    setIsOptimizingPhotos(true);
+    try {
+      const optimizedById = new Map<string, string>();
+      for (const item of oversizedPhotos) optimizedById.set(item.id, await createMenuThumbnailFromDataUrl(item.image));
+      const optimizedMenu = menuItems.map((item) => ({ ...item, image: optimizedById.get(item.id) || item.image }));
+      const response = await fetch('/api/menu', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: optimizedMenu }) });
+      const result: { error?: string } = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not optimize the menu photos.');
+      setMenuItems(optimizedMenu);
+      setSuccessMessage(`${oversizedPhotos.length} menu photo${oversizedPhotos.length === 1 ? '' : 's'} optimized and synced to the public menu.`);
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : 'Could not optimize the menu photos.');
+    } finally {
+      setIsOptimizingPhotos(false);
     }
   };
 
@@ -459,8 +485,10 @@ function AdminDashboard() {
                   onToggle={toggleAvailability}
                   savingAvailabilityId={availabilitySavingId}
                   availabilityError={availabilityError}
-                  deletedItems={deletedItems}
-                  onRestore={restoreItem}
+              deletedItems={deletedItems}
+              onRestore={restoreItem}
+              onOptimizePhotos={optimizeMenuPhotos}
+              isOptimizingPhotos={isOptimizingPhotos}
                 />
               </motion.div>
             )}
@@ -622,7 +650,7 @@ function DashboardView({ stats, menuItems }: { stats: { totalItems: number; cate
 
 /* ─── Menu Items View ─── */
 
-function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAvailabilityId, availabilityError, deletedItems, onRestore }: {
+function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAvailabilityId, availabilityError, deletedItems, onRestore, onOptimizePhotos, isOptimizingPhotos }: {
   items: MenuItem[];
   categories: string[];
   onEdit: (item: MenuItem) => void;
@@ -632,6 +660,8 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
   availabilityError: string;
   deletedItems: MenuItem[];
   onRestore: (item: MenuItem) => void;
+  onOptimizePhotos: () => Promise<void>;
+  isOptimizingPhotos: boolean;
 }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -657,6 +687,10 @@ function MenuItemsView({ items, categories, onEdit, onDelete, onToggle, savingAv
           </div>
         </section>
       )}
+      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 className="text-sm font-bold">Keep public photos in sync</h2><p className="mt-1 text-xs text-[#f4f2e9]/55">Compress older, oversized uploads so they load quickly on enate.et.</p></div>
+        <button type="button" disabled={isOptimizingPhotos} onClick={() => void onOptimizePhotos()} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-[#f3cf22]/55 px-3 py-2 text-xs font-bold text-[#f3cf22] transition-colors hover:bg-[#f3cf22] hover:text-[#242522] disabled:cursor-wait disabled:opacity-60"><ImageDown size={15} />{isOptimizingPhotos ? 'Optimizing…' : 'Optimize menu photos'}</button>
+      </div>
       <div className="mb-4">
         <label htmlFor="menu-item-search" className="sr-only">Search menu items</label>
         <div className="flex items-center gap-2 rounded-md border border-[#f4f2e9]/15 bg-[#242522] px-3 focus-within:border-[#f3cf22]">
@@ -984,11 +1018,11 @@ function ReservationsView() {
 
 /* ─── Menu Item Form (Add/Edit Modal) ─── */
 
-async function createMenuThumbnail(file: File): Promise<string> {
-  if (!file.type.startsWith('image/')) throw new Error('Choose an image file.');
-  if (file.size > 5 * 1024 * 1024) throw new Error('Choose an image smaller than 5 MB.');
+async function createMenuThumbnail(sourceFile: Blob): Promise<string> {
+  if (!sourceFile.type.startsWith('image/')) throw new Error('Choose an image file.');
+  if (sourceFile.size > 5 * 1024 * 1024) throw new Error('Choose an image smaller than 5 MB.');
 
-  const sourceUrl = URL.createObjectURL(file);
+  const sourceUrl = URL.createObjectURL(sourceFile);
   const source = new Image();
 
   try {
@@ -1002,18 +1036,31 @@ async function createMenuThumbnail(file: File): Promise<string> {
       throw new Error('Choose an image smaller than 24 megapixels.');
     }
 
-    const maxSide = 900;
-    const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Your browser could not prepare this image.');
-    context.drawImage(source, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.86);
+
+    let maxSide = 480;
+    let quality = 0.7;
+    let thumbnail = '';
+    do {
+      const scale = Math.min(1, maxSide / Math.max(source.naturalWidth, source.naturalHeight));
+      canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+      context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      thumbnail = canvas.toDataURL('image/jpeg', quality);
+      maxSide = Math.round(maxSide * 0.8);
+      quality = Math.max(0.5, quality - 0.06);
+    } while (thumbnail.length > 220_000 && maxSide >= 240);
+    return thumbnail;
   } finally {
     URL.revokeObjectURL(sourceUrl);
   }
+}
+
+async function createMenuThumbnailFromDataUrl(dataUrl: string): Promise<string> {
+  const response = await fetch(dataUrl);
+  return createMenuThumbnail(await response.blob());
 }
 
 function MenuItemForm({ item, categories, onSave, onClose }: { item: MenuItem | null; categories: string[]; onSave: (item: MenuItem) => Promise<boolean>; onClose: () => void }) {
