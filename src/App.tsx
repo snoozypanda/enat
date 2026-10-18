@@ -941,7 +941,7 @@ function LocationFooter() {
           <div className="mt-24 flex flex-col gap-4 border-t border-[#f4f2e9]/15 pt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/40 sm:flex-row sm:justify-between">
             <span>© 2025 Enate</span>
             <span>Addis / Asmara / Soho</span>
-            <span>Powered by 4kilo Dev</span>
+            <a href="https://4kilo.dev" target="_blank" rel="noreferrer" className="hover:text-[#f3cf22]">Powered by 4Kilo Dev</a>
             <a href="/photo-credits" className="hover:text-[#f3cf22]">Photo credits</a>
             <a href="#top" data-testid="link-footer-top" className="hover:text-[#f3cf22]">Back to the beginning ↑</a>
           </div>
