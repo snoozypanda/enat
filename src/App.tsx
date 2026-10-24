@@ -8,6 +8,7 @@ import { formatMenuPrice, menuCategories, menuDishes } from '@/lib/menu';
 import { readStoredMenu } from '@/lib/menu-storage';
 import { partySizes, type PartySize } from '@/lib/reservations';
 import { readStoredCategories, reconcileMenuCategories } from '@/lib/category-storage';
+import { SiteSettingsContext, useSiteSettings, defaultSiteSettings, type SiteSettings } from '@/lib/site-settings-context';
 const images = {
   hero: '/menu-assets/enat-hero.jpg',
   kitfo: '/menu-assets/enat-kitfo.jpg',
@@ -214,6 +215,7 @@ function Header({ onMenu }: { onMenu: () => void }) {
 /* ─── Mobile Menu ─── */
 
 function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const settings = useSiteSettings();
   const links = [['Menu', '#menu'], ['Our story', '#story'], ['The room', '#the-room'], ['Events', '#events'], ['Book a table', '#reserve']];
   return (
     <AnimatePresence>
@@ -261,8 +263,8 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             transition={{ delay: 0.5 }}
             className="flex items-end justify-between border-t border-[#f4f2e9]/15 pt-5 text-xs text-[#f4f2e9]/65"
           >
-            <span>16 Bateman Street<br />Soho, London W1D 3AH</span>
-            <span className="text-right">Wed—Sat<br />17:30—23:00</span>
+            <span>{settings.streetAddress}<br />{settings.cityPostcode}</span>
+            <span className="text-right">{settings.openDays}<br />{settings.openHours}</span>
           </motion.div>
         </motion.div>
       )}
@@ -273,6 +275,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 /* ─── Hero ─── */
 
 function Hero({ onReserve, onMenu }: { onReserve: () => void; onMenu: () => void }) {
+  const settings = useSiteSettings();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] });
   const imgScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
@@ -294,7 +297,7 @@ function Hero({ onReserve, onMenu }: { onReserve: () => void; onMenu: () => void
           <div>
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] as const }} className="mb-7 flex items-center gap-3 text-[#f3cf22]">
               <span className="gold-rule" />
-              <span className="eyebrow">Ethiopian and Eritrean Cuisine / Soho, London</span>
+              <span className="eyebrow">Ethiopian and Eritrean Cuisine / {settings.areaName}, London</span>
             </motion.div>
             <div className="overflow-hidden">
               <motion.h1 initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] as const }} className="display max-w-4xl text-[clamp(5.2rem,17vw,13rem)] leading-[.78] text-[#f4f2e9]">
@@ -333,6 +336,7 @@ function Hero({ onReserve, onMenu }: { onReserve: () => void; onMenu: () => void
 /* ─── Intro Story ─── */
 
 function IntroStory() {
+  const settings = useSiteSettings();
   return (
     <section id="story" className="relative overflow-hidden bg-[#f3cf22] px-5 py-20 md:px-10 md:py-32">
       <div className="absolute right-0 top-0 h-full w-1/4 pattern-grid opacity-40" />
@@ -346,7 +350,7 @@ function IntroStory() {
         <div className="mt-12 grid gap-12 md:grid-cols-[.75fr_1.25fr] md:gap-24">
           <StaggerChildren stagger={0.15} delay={0.2}>
             <motion.div variants={staggerItem}>
-              <span className="stamp inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#84373d]">Since 2018 <Flame size={14} /></span>
+              <span className="stamp inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#84373d]">Since {settings.foundedYear} <Flame size={14} /></span>
             </motion.div>
             <motion.p variants={staggerItem} className="mt-12 max-w-[300px] font-mono text-sm leading-7 text-[#242522]/70 md:text-base">
               Enate means mother in Amharic. It is a word for the person who makes sure there is always enough.
@@ -360,7 +364,7 @@ function IntroStory() {
             </Reveal>
             <Reveal delay={0.4}>
               <p className="mt-9 max-w-xl text-base leading-7 text-[#242522]/75 md:text-lg">
-                We cook the food we grew up with — the slow onions, the bright heat, the soft injera — and set it in the middle. Addis and Asmara by way of Soho. Come hungry. Bring people.
+                We cook the food we grew up with — the slow onions, the bright heat, the soft injera — and set it in the middle. Addis and Asmara by way of {settings.areaName}. Come hungry. Bring people.
               </p>
             </Reveal>
             <Reveal delay={0.5}>
@@ -806,6 +810,7 @@ function Events() {
 /* ─── Reservation ─── */
 
 function Reservation() {
+  const settings = useSiteSettings();
   const [submitted, setSubmitted] = useState(false);
   const [guests, setGuests] = useState<PartySize>('2 guests');
   const [form, setForm] = useState({ name: '', phone: '', date: '', time: '19:00', note: '' });
@@ -844,8 +849,8 @@ function Reservation() {
             Your<br /><span className="text-[#84373d]">table.</span>
           </motion.h2>
           <motion.div variants={staggerItem} className="mt-10 space-y-3 text-sm leading-6 text-[#242522]/72">
-            <p><Clock3 size={15} className="mr-2 inline text-[#84373d]" /> Wednesday—Saturday, 17:30—23:00</p>
-            <p><MapPin size={15} className="mr-2 inline text-[#84373d]" /> 16 Bateman Street, Soho, London</p>
+            <p><Clock3 size={15} className="mr-2 inline text-[#84373d]" /> {settings.openDays}, {settings.openHours}</p>
+            <p><MapPin size={15} className="mr-2 inline text-[#84373d]" /> {settings.streetAddress}, {settings.cityPostcode}</p>
           </motion.div>
         </StaggerChildren>
         {submitted ? (
@@ -876,7 +881,7 @@ function Reservation() {
               </div>
               <label className="block">
                 <span className="eyebrow text-[#84373d]">Preferred time</span>
-                <input required type="time" min="17:30" max="23:00" step="1800" value={form.time} onChange={(event) => update('time', event.target.value)} data-testid="input-reservation-time" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none focus:border-[#84373d]" />
+                <input required type="time" min="08:30" max="23:00" step="1800" value={form.time} onChange={(event) => update('time', event.target.value)} data-testid="input-reservation-time" className="mt-3 w-full border-0 border-b border-[#242522]/25 bg-transparent px-0 py-3 text-lg outline-none focus:border-[#84373d]" />
               </label>
               <label className="block">
                 <span className="eyebrow text-[#84373d]">Party size</span>
@@ -907,6 +912,7 @@ function Reservation() {
 /* ─── Footer ─── */
 
 function LocationFooter() {
+  const settings = useSiteSettings();
   return (
     <footer className="dark-panel px-5 pb-8 pt-20 md:px-10 md:pt-32">
       <div className="mx-auto max-w-[1220px]">
@@ -926,7 +932,7 @@ function LocationFooter() {
           <StaggerChildren className="flex flex-col justify-end gap-10 md:pb-2" stagger={0.1} delay={0.2}>
             <motion.div variants={staggerItem}>
               <span className="eyebrow text-[#f3cf22]">Find us</span>
-              <p className="mt-3 text-sm leading-6 text-[#f4f2e9]/70">16 Bateman Street<br />Soho, London W1D 3AH<br />+44 (0)20 7946 0812</p>
+              <p className="mt-3 text-sm leading-6 text-[#f4f2e9]/70">{settings.streetAddress}<br />{settings.cityPostcode}<br />{settings.phone}</p>
             </motion.div>
             <motion.div variants={staggerItem}>
               <span className="eyebrow text-[#f3cf22]">Stay close</span>
@@ -940,8 +946,8 @@ function LocationFooter() {
         <Reveal delay={0.3}>
           <div className="mt-24 flex flex-col gap-4 border-t border-[#f4f2e9]/15 pt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[#f4f2e9]/40 sm:flex-row sm:justify-between">
             <span>© 2025 Enate</span>
-            <span>Addis / Asmara / Soho</span>
-            <a href="https://4kilo.dev" target="_blank" rel="noreferrer" className="hover:text-[#f3cf22]">Powered by 4Kilo Dev</a>
+            <span>Addis / Asmara / {settings.areaName}</span>
+            <a href="https://www.4kilo.dev" target="_blank" rel="noreferrer" className="hover:text-[#f3cf22]">Powered by 4Kilo Dev</a>
             <a href="/photo-credits" className="hover:text-[#f3cf22]">Photo credits</a>
             <a href="#top" data-testid="link-footer-top" className="hover:text-[#f3cf22]">Back to the beginning ↑</a>
           </div>
@@ -1021,9 +1027,16 @@ function Home() {
   const [hiddenDishIds, setHiddenDishIds] = useState<Set<string>>(() => new Set());
   const [deletedDishIds, setDeletedDishIds] = useState<Set<string>>(() => new Set());
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
   const goToReserve = () => document.getElementById('reserve')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   const stepGallery = (dir: number) => setGalleryIndex((current) => current === null ? null : (current + dir + gallery.length) % gallery.length);
   useEffect(() => { document.body.style.overflow = menuOpen || dish !== null || galleryIndex !== null ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [menuOpen, dish, galleryIndex]);
+  useEffect(() => {
+    fetch('/api/site-settings')
+      .then((response) => response.json() as Promise<{ settings?: SiteSettings }>)
+      .then((result) => { if (result.settings) setSiteSettings(result.settings); })
+      .catch(() => undefined);
+  }, []);
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { setMenuOpen(false); setDish(null); setGalleryIndex(null); } if (galleryIndex !== null && event.key === 'ArrowRight') stepGallery(1); if (galleryIndex !== null && event.key === 'ArrowLeft') stepGallery(-1); };
     document.addEventListener('keydown', handleKey);
@@ -1089,21 +1102,23 @@ function Home() {
     setCategories((current) => reconcileMenuCategories(current, dishes.map((item) => item.category)));
   }, [dishes]);
   return (
-    <main className="site-shell grain min-h-[100dvh]">
-      <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <IntroStory />
-      <MenuSection dishes={dishes.filter((dish) => !hiddenDishIds.has(dish.id) && !deletedDishIds.has(dish.id))} categories={categories} onDish={setDish} />
-      <SpecialSection />
-      <GallerySection onOpen={setGalleryIndex} />
-      <Reviews />
-      <Events />
-      <Reservation />
-      <LocationFooter />
-      <DishModal dish={dish} onClose={() => setDish(null)} />
-      <GalleryViewer index={galleryIndex} onClose={() => setGalleryIndex(null)} onStep={stepGallery} />
-      <FloatingActions />
-    </main>
+    <SiteSettingsContext.Provider value={siteSettings}>
+      <main className="site-shell grain min-h-[100dvh]">
+        <Hero onReserve={goToReserve} onMenu={() => setMenuOpen(true)} />
+        <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+        <IntroStory />
+        <MenuSection dishes={dishes.filter((dish) => !hiddenDishIds.has(dish.id) && !deletedDishIds.has(dish.id))} categories={categories} onDish={setDish} />
+        <SpecialSection />
+        <GallerySection onOpen={setGalleryIndex} />
+        <Reviews />
+        <Events />
+        <Reservation />
+        <LocationFooter />
+        <DishModal dish={dish} onClose={() => setDish(null)} />
+        <GalleryViewer index={galleryIndex} onClose={() => setGalleryIndex(null)} onStep={stepGallery} />
+        <FloatingActions />
+      </main>
+    </SiteSettingsContext.Provider>
   );
 }
 

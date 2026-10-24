@@ -9,19 +9,19 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   applicationName: 'Enate Restaurant',
   title: {
-    default: 'Enate | Ethiopian and Eritrean Cuisine in Soho, London',
+    default: 'Enate | Ethiopian and Eritrean Cuisine in Shepherd\'s Bush, London',
     template: '%s | Enate Restaurant',
   },
-  description: 'Enate serves authentic Ethiopian and Eritrean cuisine in Soho, London. Enjoy injera, tibs, doro wat, vegan and vegetarian dishes, sharing platters, and traditional coffee ceremonies.',
+  description: 'Enate serves authentic Ethiopian and Eritrean cuisine in Shepherd\'s Bush, London. Enjoy injera, tibs, doro wat, vegan and vegetarian dishes, sharing platters, and traditional coffee ceremonies.',
   keywords: [
-    'Ethiopian restaurant Soho',
+    'Ethiopian restaurant Shepherd\'s Bush',
     'Eritrean restaurant London',
     'Ethiopian and Eritrean cuisine',
-    'Ethiopian and Eritrean restaurant Soho',
+    'Ethiopian and Eritrean restaurant Shepherd\'s Bush',
     'Ethiopian food London',
     'Ethiopian restaurant near me',
     'Ethiopian vegan food London',
-    'injera Soho',
+    'injera Shepherd\'s Bush',
     'doro wat London',
     'Ethiopian coffee ceremony London',
     'vegetarian Ethiopian restaurant',
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
   },
   openGraph: {
-    title: 'Enate | Ethiopian and Eritrean Cuisine in Soho, London',
-    description: 'Authentic Ethiopian and Eritrean cuisine in Soho: generous sharing plates, vegan favourites and traditional coffee ceremonies.',
+    title: 'Enate | Ethiopian and Eritrean Cuisine in Shepherd\'s Bush, London',
+    description: 'Authentic Ethiopian and Eritrean cuisine in Shepherd\'s Bush: generous sharing plates, vegan favourites and traditional coffee ceremonies.',
     url: '/',
     siteName: 'Enate Restaurant',
     locale: 'en_GB',
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Enate | Ethiopian and Eritrean Cuisine in Soho, London',
-    description: 'Authentic Ethiopian and Eritrean cuisine in Soho: generous sharing plates, vegan favourites and traditional coffee ceremonies.',
+    title: 'Enate | Ethiopian and Eritrean Cuisine in Shepherd\'s Bush, London',
+    description: 'Authentic Ethiopian and Eritrean cuisine in Shepherd\'s Bush: generous sharing plates, vegan favourites and traditional coffee ceremonies.',
     images: [{ url: '/opengraph-image', alt: 'Enate Ethiopian and Eritrean Restaurant logo' }],
   },
   category: 'restaurant',
   other: {
     'geo.region': 'GB-LND',
-    'geo.placename': 'Soho, London',
+    'geo.placename': 'Shepherd\'s Bush, London',
   },
 };
 

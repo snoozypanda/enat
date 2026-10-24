@@ -34,7 +34,7 @@ export default async function OpenGraphImage() {
             style={{ borderRadius: '110px', objectFit: 'contain' }}
           />
           <div style={{ color: '#f3cf22', fontSize: 34, fontWeight: 700, letterSpacing: 7, textTransform: 'uppercase' }}>Enate Restaurant</div>
-          <div style={{ fontSize: 26, letterSpacing: 2 }}>Ethiopian and Eritrean Cuisine · Soho, London</div>
+          <div style={{ fontSize: 26, letterSpacing: 2 }}>Ethiopian and Eritrean Cuisine · Shepherd&apos;s Bush, London</div>
         </div>
       </div>
     ),

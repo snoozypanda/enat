@@ -2,17 +2,18 @@
 
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, ChefHat, Edit3, ImageDown, LayoutDashboard, List, Plus, Save, Search, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChefHat, Edit3, ImageDown, LayoutDashboard, List, Plus, Save, Search, Trash2, Users, X, Utensils, CalendarDays, TrendingUp, Coffee, Star, Settings, CheckCircle2, AlertCircle } from 'lucide-react';
 import { formatMenuPrice, menuCategories, menuDishes, normalizeMenuPrice } from '@/lib/menu';
 import { MENU_STORAGE_KEY, mergeStoredMenuWithCatalog, readStoredMenu, type StoredMenuItem } from '@/lib/menu-storage';
 import type { Reservation } from '@/lib/reservations';
 import { CATEGORY_STORAGE_KEY, defaultMenuCategories, readStoredCategories } from '@/lib/category-storage';
+import { type SiteSettings, defaultSiteSettings } from '@/lib/site-settings-context';
 
 /* ─── Types ─── */
 
 type MenuItem = StoredMenuItem;
 
-type AdminView = 'dashboard' | 'menu' | 'categories' | 'reservations';
+type AdminView = 'dashboard' | 'menu' | 'categories' | 'reservations' | 'settings';
 
 /* ─── Mock Data ─── */
 
@@ -358,6 +359,7 @@ function AdminDashboard() {
     { icon: Utensils, label: 'Menu Items', view: 'menu' },
     { icon: List, label: 'Categories', view: 'categories' },
     { icon: CalendarDays, label: 'Reservations', view: 'reservations' },
+    { icon: Settings, label: 'Settings', view: 'settings' },
   ];
 
   // Close sidebar on mobile when navigating
@@ -451,7 +453,7 @@ function AdminDashboard() {
             >
               {sidebarOpen ? <X size={16} /> : <List size={16} />}
             </motion.button>
-            <h1 className="text-base font-bold capitalize sm:text-lg">{view === 'menu' ? 'Menu Items' : view}</h1>
+            <h1 className="text-base font-bold capitalize sm:text-lg">{view === 'menu' ? 'Menu Items' : view === 'settings' ? 'Site Settings' : view}</h1>
           </div>
           {view === 'menu' && (
             <motion.button
@@ -500,6 +502,11 @@ function AdminDashboard() {
             {view === 'reservations' && (
               <motion.div key="reservations" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
                 <ReservationsView />
+              </motion.div>
+            )}
+            {view === 'settings' && (
+              <motion.div key="settings" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                <SettingsView />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1012,6 +1019,254 @@ function ReservationsView() {
       ) : (
         <div className="mt-6 rounded-lg border border-dashed border-[#f4f2e9]/15 p-10 text-center text-sm text-[#f4f2e9]/45">No reservations in this view.</div>
       )}
+    </div>
+  );
+}
+
+/* ─── Site Settings View ─── */
+
+function SettingsView() {
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    fetch('/api/site-settings')
+      .then((res) => res.json() as Promise<{ settings?: SiteSettings; error?: string }>)
+      .then((data) => {
+        if (data.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(() => {
+        setErrorMessage('Unable to load current settings from the server. Using defaults.');
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = (field: keyof SiteSettings, value: string) => {
+    setSettings((prev) => ({ ...prev, [field]: value }));
+    setSavedSuccess(false);
+    setErrorMessage('');
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setErrorMessage('');
+    setSavedSuccess(false);
+
+    try {
+      const res = await fetch('/api/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save settings.');
+      }
+      setSavedSuccess(true);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-[#f4f2e9]/50">
+        Loading site settings…
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <div className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-6">
+        <div className="border-b border-[#f4f2e9]/10 pb-4">
+          <h2 className="text-lg font-bold text-[#f4f2e9]">Restaurant Information & Location</h2>
+          <p className="mt-1 text-xs text-[#f4f2e9]/60">
+            Update your address, neighborhood, opening hours, phone number, and founding year. These changes update immediately across the entire website.
+          </p>
+        </div>
+
+        {savedSuccess && (
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-[#25D366]/30 bg-[#25D366]/10 px-4 py-3 text-xs font-medium text-[#25D366]">
+            <CheckCircle2 size={16} />
+            <span>Settings saved successfully! The live website is now updated.</span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-[#84373d]/40 bg-[#84373d]/20 px-4 py-3 text-xs text-[#f3cf22]">
+            <AlertCircle size={16} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="mt-6 space-y-6">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Street Address
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.streetAddress}
+                onChange={(e) => handleChange('streetAddress', e.target.value)}
+                placeholder="e.g. 78 Goldhawk Rd"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Shown on hero, reservation section, and footer</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                City & Postcode
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.cityPostcode}
+                onChange={(e) => handleChange('cityPostcode', e.target.value)}
+                placeholder="e.g. London W12 8HA"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">e.g. London W12 8HA</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Area / Neighborhood
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.areaName}
+                onChange={(e) => handleChange('areaName', e.target.value)}
+                placeholder="e.g. Shepherd's Bush"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Shown in &quot;Addis and Asmara by way of...&quot; and headers</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Founded / Established Year
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.foundedYear}
+                onChange={(e) => handleChange('foundedYear', e.target.value)}
+                placeholder="e.g. 2024"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Shown in &quot;Since [Year]&quot; in the story section</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Phone Number
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                placeholder="e.g. +44 (0)20 7946 0812"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Customer contact number</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Open Days
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.openDays}
+                onChange={(e) => handleChange('openDays', e.target.value)}
+                placeholder="e.g. Mon—Sun"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Operating days</p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Opening Hours
+              </label>
+              <input
+                type="text"
+                required
+                value={settings.openHours}
+                onChange={(e) => handleChange('openHours', e.target.value)}
+                placeholder="e.g. 8:30—23:00"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Daily service hours</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#f4f2e9]/10 pt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setSettings(defaultSiteSettings);
+                setSavedSuccess(false);
+              }}
+              className="text-xs text-[#f4f2e9]/50 transition-colors hover:text-[#f3cf22]"
+            >
+              Reset to Recommended Defaults
+            </button>
+            <motion.button
+              type="submit"
+              disabled={saving}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 rounded-md bg-[#f3cf22] px-6 py-2.5 text-sm font-bold text-[#242522] transition-colors disabled:cursor-wait disabled:opacity-60"
+            >
+              <Save size={16} />
+              {saving ? 'Saving changes…' : 'Save Settings'}
+            </motion.button>
+          </div>
+        </form>
+      </div>
+
+      {/* Live Preview Card */}
+      <div className="rounded-lg border border-[#f4f2e9]/10 bg-[#242522] p-6">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#f3cf22]">Live Website Preview</h3>
+        <p className="mt-1 text-xs text-[#f4f2e9]/50">How this appears to visitors on the frontend:</p>
+
+        <div className="mt-4 grid gap-4 rounded-md border border-[#f4f2e9]/10 bg-[#1a1b19] p-4 sm:grid-cols-3">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">Story Badge</span>
+            <div className="mt-1 font-bold text-[#f3cf22]">Since {settings.foundedYear || '2024'}</div>
+            <div className="mt-1 text-xs text-[#f4f2e9]/60">Addis & Asmara by way of {settings.areaName || "Shepherd's Bush"}</div>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">Address</span>
+            <div className="mt-1 text-xs font-medium text-[#f4f2e9]">{settings.streetAddress || '78 Goldhawk Rd'}</div>
+            <div className="text-xs text-[#f4f2e9]/60">{settings.cityPostcode || 'London W12 8HA'}</div>
+            <div className="mt-1 text-[11px] text-[#f4f2e9]/50">{settings.phone || '+44 (0)20 7946 0812'}</div>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">Service Hours</span>
+            <div className="mt-1 text-xs font-medium text-[#f4f2e9]">{settings.openDays || 'Mon—Sun'}</div>
+            <div className="text-xs text-[#f4f2e9]/60">{settings.openHours || '8:30—23:00'}</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
