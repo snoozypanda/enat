@@ -29,6 +29,7 @@ export async function PUT(request: NextRequest) {
     typeof (settings as SiteSettings).cityPostcode !== 'string' ||
     typeof (settings as SiteSettings).areaName !== 'string' ||
     typeof (settings as SiteSettings).phone !== 'string' ||
+    ((settings as SiteSettings).email !== undefined && typeof (settings as SiteSettings).email !== 'string') ||
     typeof (settings as SiteSettings).openDays !== 'string' ||
     typeof (settings as SiteSettings).openHours !== 'string' ||
     typeof (settings as SiteSettings).foundedYear !== 'string'

@@ -15,6 +15,7 @@ const restaurantSchema = {
   servesCuisine: ['Ethiopian and Eritrean cuisine', 'Ethiopian', 'Eritrean', 'Vegan', 'Vegetarian'],
   priceRange: '££',
   telephone: '+442079460812',
+  email: 'hello@enate.et',
   address: {
     '@type': 'PostalAddress',
     streetAddress: '78 Goldhawk Rd',

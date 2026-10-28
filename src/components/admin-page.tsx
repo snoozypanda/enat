@@ -1187,6 +1187,21 @@ function SettingsView() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={settings.email || ''}
+                onChange={(e) => handleChange('email', e.target.value)}
+                placeholder="e.g. hello@enate.et"
+                className="mt-2 w-full rounded-md border border-[#f4f2e9]/15 bg-[#1a1b19] px-3 py-2.5 text-sm text-[#f4f2e9] outline-none transition-colors focus:border-[#f3cf22]"
+              />
+              <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Customer contact & enquiry email</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
                 Open Days
               </label>
               <input
@@ -1200,7 +1215,7 @@ function SettingsView() {
               <p className="mt-1 text-[11px] text-[#f4f2e9]/40">Operating days</p>
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#f4f2e9]/60">
                 Opening Hours
               </label>
@@ -1254,10 +1269,11 @@ function SettingsView() {
           </div>
 
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">Address</span>
+            <span className="text-[10px] uppercase tracking-wider text-[#f4f2e9]/40">Address & Contact</span>
             <div className="mt-1 text-xs font-medium text-[#f4f2e9]">{settings.streetAddress || '78 Goldhawk Rd'}</div>
             <div className="text-xs text-[#f4f2e9]/60">{settings.cityPostcode || 'London W12 8HA'}</div>
             <div className="mt-1 text-[11px] text-[#f4f2e9]/50">{settings.phone || '+44 (0)20 7946 0812'}</div>
+            <div className="mt-0.5 text-[11px] text-[#f3cf22]">{settings.email || 'hello@enate.et'}</div>
           </div>
 
           <div>

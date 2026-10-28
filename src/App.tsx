@@ -938,7 +938,7 @@ function LocationFooter() {
               <span className="eyebrow text-[#f3cf22]">Stay close</span>
               <div className="mt-3 flex items-center gap-5">
                 <motion.a href="https://www.tiktok.com/@enate.restaurant" target="_blank" rel="noreferrer" data-testid="link-tiktok" aria-label="TikTok" whileHover={{ scale: 1.2, color: '#f3cf22' }} className="text-[#f4f2e9]/70 transition-colors"><Music2 size={19} /></motion.a>
-                <motion.a href="mailto:hello@enatrestaurant.co.uk" data-testid="link-email" whileHover={{ color: '#f3cf22' }} className="text-xs text-[#f4f2e9]/70 transition-colors">hello@enatrestaurant.co.uk</motion.a>
+                <motion.a href={`mailto:${settings.email || 'hello@enate.et'}`} data-testid="link-email" whileHover={{ color: '#f3cf22' }} className="text-xs text-[#f4f2e9]/70 transition-colors">{settings.email || 'hello@enate.et'}</motion.a>
               </div>
             </motion.div>
           </StaggerChildren>
